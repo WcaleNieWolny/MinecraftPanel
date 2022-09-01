@@ -1,7 +1,8 @@
 mod server_process;
 mod config;
 
-use std::{process::Stdio, env, str::FromStr};
+use core::slice::SlicePattern;
+use std::{process::Stdio, env, str::FromStr, path::PathBuf};
 use config::ServerConfig;
 use tokio::{process::Command, fs::{File}, io::{AsyncWriteExt, AsyncReadExt}};
 
@@ -68,17 +69,42 @@ async fn prepere_server_jar(servrer_config: &ServerConfig) -> anyhow::Result<()>
 
     println!("EXIST: {}", path.exists());
 
+    let build_id = make_paper_build_id_request(servrer_config.version.replace("paper-", "")).await?;
+
     Ok(())
 }
 
-async fn make_paper_version_request(version: String) -> anyhow::Result<String>{
+async fn make_paper_build_id_request(version: String) -> anyhow::Result<i64>{
     let url = format!("https://api.papermc.io/v2/projects/paper/versions/{}", version);
     let builds_response = reqwest::Client::new()
     .get(url).send().await?;
 
     let build_json = builds_response.json::<serde_json::Value>().await?;
 
-    
+    let builds = &build_json["builds"];
+    let builds = builds.as_array().expect("Coudln't get builds when fetching paper builds");
 
-    Err(anyhow::Error::msg("Cannot grab paper download link!"))
+    let latest_build = &builds[builds.len() - 1];
+    let latest_build = latest_build.as_i64().expect("Couln't convert version to i64");
+
+    println!("Fetched latest paper build as {}", latest_build);
+
+    Ok(latest_build)
+}
+
+async fn download_paper_jar(version: String, build_id: i64, path: PathBuf) -> anyhow::Result<()>{
+    let url = format!("https://api.papermc.io/v2/projects/paper/versions/{}/builds/{}/downloads/paper-{}-{}.jar", version, build_id, version, build_id);
+
+    let builds_response = reqwest::Client::new()
+    .get(url).send().await?;
+    let builds_response = builds_response.bytes().await?;
+
+    //let a = builds_response.iter().collect();
+    //https://stackoverflow.com/questions/44438059/how-to-convert-from-stdiobytes-to-u8
+
+    let file = tokio::fs::File::open(path).await?;
+
+    file.write(builds_response.as_sl);
+
+    Ok(())
 }
