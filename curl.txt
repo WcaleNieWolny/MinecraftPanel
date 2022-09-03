@@ -1,0 +1,2 @@
+curl -H "Content-Type: application/json" --data '{"command":"/list"}' --request POST http://127.0.0.1:8000/api/execute_cmd
+curl http://127.0.0.1:8000/api/last_std
