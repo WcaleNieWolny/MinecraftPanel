@@ -1,5 +1,6 @@
 use std::process::exit;
 
+use regex::Regex;
 use tokio::io::{BufWriter, AsyncWriteExt, BufReader, AsyncBufReadExt};
 use tokio::process::{ChildStdout, Child};
 use tokio::io::Lines;
@@ -81,5 +82,36 @@ impl ServerProcess {
 
     pub fn last_stdout(&self) -> String{
         self.stdout_rx.borrow().clone()
+    }
+
+    pub async fn list_players(&mut self) -> Vec<String>{
+        let vec = Vec::new();
+        let list_patern_empty = Regex::new(r"\[[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,3})? INFO]: There are [0-9]+ of a max of [0-9]+ players online:").unwrap();
+        let list_patern_some = Regex::new(r"\[[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,3})? INFO]: There are [0-9]+ of a max of [0-9]+ players online: [a-zA-Z]+").unwrap(); // [a-zA-Z]+
+
+        self.write_to_stdin("list".to_string());
+
+        let list: Vec<String> = loop {
+            let val = self.read_from_stdout().await.unwrap();
+            
+            if list_patern_some.is_match(val.as_str()) {
+                let capture = list_patern_some.captures(val.as_str()).unwrap();
+                println!("CAPTURES SIZE: {}", capture.len());
+                
+                let c = capture.get(1).expect("no zero");
+
+                println!("Haha: {}", c.as_str());
+
+                break Vec::new();
+            }
+
+            if list_patern_empty.is_match(val.as_str()){
+                println!("NO PLAYERS!");
+                break Vec::new();
+            }
+        };
+
+
+        vec
     }
 }

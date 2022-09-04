@@ -4,38 +4,16 @@ mod server_process;
 mod config;
 mod minecraft_routes;
 
-use std::{process::Stdio, env, str::FromStr, path::PathBuf, io::{BufRead}, sync::Arc, thread};
+use std::{process::Stdio, env, path::PathBuf, io::{BufRead}, sync::Arc, thread};
 use config::ServerConfig;
-use rocket::{fairing::AdHoc, State};
-use serde_json::{json};
-use tokio::{process::Command, fs::{File}, io::{AsyncWriteExt, AsyncReadExt}, sync::Mutex};
+use tokio::{sync::Mutex, fs::File, io::{AsyncWriteExt, AsyncReadExt}, process::Command};
 
 use crate::server_process::ServerProcess; // 0.2.4, features = ["full"]
 
-#[tokio::main]
+#[rocket::main]
 async fn main() -> anyhow::Result<()>{
 
-    let mut path = env::current_dir().unwrap();
-    path.push("config.toml");
-
-    let mut config_file = File::open(path.clone()).await?;
-
-    let config_contents = if let 0 = config_file.metadata().await.unwrap().len() {
-        let mut config_file = File::create(path).await?;
-                let toml_str = 
-    r#"
-    version = "paper-1.18.2"
-"#;
-
-    config_file.write(toml_str.as_bytes()).await?;
-    String::from_str(toml_str)?
-    } else {
-                let mut config_contents = vec![];
-                config_file.read_to_end(&mut config_contents).await?;
-                String::from_utf8(config_contents)?
-            };
-
-    let config: ServerConfig = toml::from_str(&config_contents)?;
+    let config = get_config().await?;
 
     let server_jar_path = prepere_server_jar(&config).await?;
 
@@ -53,8 +31,7 @@ async fn main() -> anyhow::Result<()>{
         .spawn()
         .expect("cannot spawn");
 
-    let mut server_process = ServerProcess::new(cmd).await;
-    let server_process = Arc::new(Mutex::new(server_process));
+    let server_process = Arc::new(Mutex::new(ServerProcess::new(cmd).await));
 
     let server_process_clone = server_process.clone();
     thread::spawn(move || {
@@ -67,21 +44,36 @@ async fn main() -> anyhow::Result<()>{
             }
         }
     });
-   
 
-    // thread::spawn(|| async move{
-    //     loop {
-    //         for line in stdin.lock().lines() {
-    //             server_process.lock().await.write_to_stdin(line.unwrap());
-    //         }
-    //     }
-    // });
-
-    let _ = rocket::build().attach(AdHoc::on_ignite("Server Process", |rocket| async move{
-        rocket.attach(minecraft_routes::stage(server_process))
-    })).launch().await;
+    let _ = rocket::build().attach(minecraft_routes::stage(server_process)).launch().await;
 
     Ok(())
+}
+
+async fn get_config() -> anyhow::Result<ServerConfig>{
+    let mut path = env::current_dir().unwrap();
+    path.push("config.toml");
+
+    let mut config_file = File::open(path.clone()).await?;
+
+    if(config_file.metadata().await.unwrap().len() == 0){
+        let config = ServerConfig{
+            version: "paper-1.18.2".to_string()
+        };
+
+        let mut config_file = File::create(path).await?;
+        config_file.write(toml::to_string(&config).unwrap().as_bytes()).await?;
+
+        return Ok(config)
+    }
+
+    let mut config_contents = vec![];
+    config_file.read_to_end(&mut config_contents).await?;
+    let config_contents = String::from_utf8(config_contents)?;
+
+    let config: ServerConfig = toml::from_str(&config_contents)?;
+
+    Ok(config)
 }
 
 async fn prepere_server_jar(servrer_config: &ServerConfig) -> anyhow::Result<PathBuf>{
