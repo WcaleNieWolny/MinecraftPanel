@@ -25,6 +25,7 @@ async fn main() -> anyhow::Result<()>{
     let cmd = Command::new("java")
         .arg("-jar")
         .arg(server_jar_path_str)
+        .arg("nogui")
         .current_dir(server_jar_pwd_path)
         .stdout(Stdio::piped()) // Can do the same for stderr
         .stdin(Stdio::piped())
@@ -56,7 +57,7 @@ async fn get_config() -> anyhow::Result<ServerConfig>{
 
     let mut config_file = File::open(path.clone()).await?;
 
-    if(config_file.metadata().await.unwrap().len() == 0){
+    if config_file.metadata().await.unwrap().len() == 0 {
         let config = ServerConfig{
             version: "paper-1.18.2".to_string()
         };

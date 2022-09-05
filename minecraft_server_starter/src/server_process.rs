@@ -22,7 +22,7 @@ impl ServerProcess {
 
         tokio::spawn(async move {
             while let Some(line) = result.next_line().await.unwrap() {
-                println!("TAKS: {}", line.clone());
+                println!("{}", line.clone());
 
                 stdout_tx.send(line).expect("Couldn't send stdout");
             };
@@ -85,7 +85,7 @@ impl ServerProcess {
     }
 
     pub async fn list_players(&mut self) -> Vec<String>{
-        let vec = Vec::new();
+        let mut vec = Vec::new();
         let list_patern_empty = Regex::new(r"\[[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,3})? INFO]: There are [0-9]+ of a max of [0-9]+ players online:").unwrap();
         let list_patern_some = Regex::new(r"\[[0-9]{2}:[0-9]{2}:[0-9]{2}(\.[0-9]{1,3})? INFO]: There are [0-9]+ of a max of [0-9]+ players online: [a-zA-Z]+").unwrap(); // [a-zA-Z]+
 
@@ -93,16 +93,28 @@ impl ServerProcess {
 
         let list: Vec<String> = loop {
             let val = self.read_from_stdout().await.unwrap();
+            let mut player_list = Vec::new();
             
             if list_patern_some.is_match(val.as_str()) {
-                let capture = list_patern_some.captures(val.as_str()).unwrap();
-                println!("CAPTURES SIZE: {}", capture.len());
-                
-                let c = capture.get(1).expect("no zero");
+                let list_string = list_patern_empty.replace(val.as_str(), "");
+                let list_string = list_string.trim();
 
-                println!("Haha: {}", c.as_str());
+                let mut push_string = String::new();
 
-                break Vec::new();
+                for c in list_string.chars() {
+                    if c != ' ' && c != ','{
+                        push_string.push(c)
+                    }else if !push_string.is_empty() {
+                        player_list.push(push_string);
+                        push_string = String::new()
+                    }
+                }
+
+                if !push_string.is_empty() {
+                    player_list.push(push_string)
+                }
+
+                break player_list
             }
 
             if list_patern_empty.is_match(val.as_str()){
@@ -111,6 +123,7 @@ impl ServerProcess {
             }
         };
 
+        vec.extend(list);
 
         vec
     }

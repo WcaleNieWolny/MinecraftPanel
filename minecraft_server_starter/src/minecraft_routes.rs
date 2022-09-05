@@ -1,4 +1,3 @@
-use std::ops::Deref;
 use std::sync::Arc;
 
 use rocket::{State, fairing::AdHoc};
@@ -18,7 +17,8 @@ async fn last_std(process: &State<Arc<Mutex<ServerProcess>>>) ->  rocket::serde:
 #[get("/list_players")]
 async fn list_players(process: &State<Arc<Mutex<ServerProcess>>>) ->  rocket::serde::json::Value{
     let list_players = process.lock().await.list_players().await;
-    json!({ "last_std": list_players })
+    let size = list_players.len();
+    json!({ "list_players": list_players, "size": size })
 }
 
 #[derive(Serialize, Deserialize)]
