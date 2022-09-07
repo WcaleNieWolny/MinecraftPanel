@@ -35,14 +35,12 @@ export default {
   margin-top: 1em;
   margin-left: 3.5%;
   margin-right: 3.5%;
-  height: 80%;
-  max-height: 300px;
+  max-height: 85vh;
   padding: 1em;
 }
 .list {
   border: 2px solid red;
-  height: 80%;
-  max-height: 60%;
+  max-height: 85vh;
   border-radius: 3px;
   overflow:scroll;
   overflow-x: scroll;

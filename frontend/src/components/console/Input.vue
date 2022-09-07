@@ -1,6 +1,8 @@
 <template>
-    <input v-model="formdata.input" placeholder="minecraft command" />
-    <button @click="onClick()">{{ text }}</button>
+    <div class="main">
+        <input v-model="formdata.input" placeholder="minecraft command" style="width: 90%"/>
+        <button @click="onClick()" style="width: 3%">{{ text }}</button>
+    </div>
 </template>
 
 <script lang="ts">
@@ -25,3 +27,11 @@
         }
     }
 </script>
+
+<style scoped>
+    .main {
+        margin-left: 3.5%;
+        margin-right: 3.5%;
+        padding: 1em;
+    }
+</style>
