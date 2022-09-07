@@ -10,7 +10,8 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^1.1.5"
+    "astro": "^1.1.5",
+    "vue-virtual-scroll-list": "^2.3.4"
   },
   "devDependencies": {
     "@astrojs/vue": "^1.0.0",
