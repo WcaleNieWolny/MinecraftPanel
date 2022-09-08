@@ -1,8 +1,10 @@
 <template>
     <header>
-        <h1>Console Window</h1>
-        <Textfield/>
-        <Input text="Add Tasks"/>
+        <div>
+            <h1 style="text-align: center;">Console Window</h1>
+            <Textfield/>
+            <Input text="Send"/>
+        </div>
     </header>  
 </template>
 
@@ -23,9 +25,8 @@ export default {
 
 <style scoped>
     header{
-        display: inline;
-        justify-content: space-between;
+        /* justify-content: space-between;
         align-items: center;
-        margin-bottom: 20px;
+        margin-bottom: 20px; */
     }
 </style>

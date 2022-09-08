@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+  <div id="app" class="">
     <div class="wrapper">
       <div class="list">
         <p  v-for="item in items" :key="item">
@@ -19,7 +19,7 @@ export default {
   data() {
     return {
       item: Item,
-      items: getData(100)
+      items: getData(1)
     }
   },
   components: {
@@ -29,21 +29,29 @@ export default {
 </script>
 
 <style>
-#app {
-  text-align: left;
+.this_aaa {
+  display: block;
+  width: 95%;
   color: #2c3e50;
-  margin-top: 1em;
-  margin-left: 3.5%;
-  margin-right: 3.5%;
+  margin: 0 auto;
+  margin-left: 0 auto;
+  margin-right: 0 auto;
+  min-height: 85vh;
   max-height: 85vh;
   padding: 1em;
 }
 .list {
+  display: block;
+  width: 95%;
   border: 2px solid red;
+  min-height: 85vh;
   max-height: 85vh;
+  margin: 0 auto;
+  margin-left: 0 auto;
+  margin-right: 0 auto;
   border-radius: 3px;
   overflow:scroll;
   overflow-x: scroll;
-  overflow-y: scroll;
+  overflow-y: none;
 }
 </style>
