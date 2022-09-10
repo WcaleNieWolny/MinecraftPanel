@@ -8,7 +8,7 @@ use tokio::sync::mpsc::{UnboundedSender, self};
 use tokio::sync::watch::{self, Receiver};
 
 pub struct ServerProcess{
-    stdout_rx: Receiver<String>,
+    pub stdout_rx: Receiver<String>,
     stdin_tx: UnboundedSender<String>,
     process: Child
 }
@@ -17,6 +17,7 @@ impl ServerProcess {
     pub async fn new(mut child: Child) -> Self{
 
         let std = child.stdout.take().expect("no std");
+
         let mut result: Lines<BufReader<ChildStdout>> = BufReader::new(std).lines();
         let (stdout_tx, stdout_rx) = watch::channel(String::new());
 

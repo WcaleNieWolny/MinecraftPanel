@@ -22,11 +22,3 @@ export default {
     },
 }
 </script>
-
-<style scoped>
-    header{
-        /* justify-content: space-between;
-        align-items: center;
-        margin-bottom: 20px; */
-    }
-</style>

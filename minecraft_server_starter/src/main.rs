@@ -6,7 +6,9 @@ mod minecraft_routes;
 
 use std::{process::Stdio, env, path::PathBuf, io::{BufRead}, sync::Arc, thread};
 use config::ServerConfig;
-use tokio::{sync::Mutex, fs::File, io::{AsyncWriteExt, AsyncReadExt}, process::Command};
+use tokio::{sync::{Mutex, watch::Receiver}, fs::File, io::{AsyncWriteExt, AsyncReadExt}, process::Command, net::{TcpListener, TcpStream}};
+use futures_util::{StreamExt, SinkExt};
+use tokio_tungstenite::{tungstenite::{Error, Message}};
 
 use crate::server_process::ServerProcess; // 0.2.4, features = ["full"]
 
@@ -32,7 +34,11 @@ async fn main() -> anyhow::Result<()>{
         .spawn()
         .expect("cannot spawn");
 
-    let server_process = Arc::new(Mutex::new(ServerProcess::new(cmd).await));
+    let server_process = ServerProcess::new(cmd).await;
+
+    let stdout_rx = server_process.stdout_rx.clone(); 
+
+    let server_process = Arc::new(Mutex::new(server_process));
 
     let server_process_clone = server_process.clone();
     thread::spawn(move || {
@@ -46,7 +52,77 @@ async fn main() -> anyhow::Result<()>{
         }
     });
 
+    setup_websocket("127.0.0.1:3001", stdout_rx).await?;
+
     let _ = rocket::build().attach(minecraft_routes::stage(server_process)).launch().await;
+
+    Ok(())
+}
+
+async fn setup_websocket(addr: &str, stdout_rx: Receiver<String>) -> anyhow::Result<()>{
+    let listener = TcpListener::bind(addr).await?;
+
+    tokio::spawn(async move {
+        while let Ok((stream, _)) = listener.accept().await {
+            let peer = stream.peer_addr().expect("connected streams should have a peer address");
+            let stdout_rx_clone = stdout_rx.clone();
+            tokio::spawn(async move {
+                accept_websocket_connection(peer, stream, stdout_rx_clone).await;
+            });
+        };
+    });
+
+    Ok(())
+}
+
+
+async fn accept_websocket_connection(peer: std::net::SocketAddr, stream: TcpStream, stdout_rx: Receiver<String>) {
+    if let Err(e) = handle_websocket_connection(peer, stream, stdout_rx).await {
+        match e {
+            Error::ConnectionClosed | Error::Protocol(_) | Error::Utf8 => (),
+            err => error!("Error processing connection: {}", err),
+        }
+    }
+}
+
+async fn handle_websocket_connection(_peer: std::net::SocketAddr, stream: TcpStream, stdout_rx: Receiver<String>) -> Result<(), Error> {
+    let addr = stream.peer_addr().expect("connected streams should have a peer address");
+    info!("Peer address: {}", addr);
+
+    let mut ws_stream = tokio_tungstenite::accept_async(stream)
+        .await
+        .expect("Error during the websocket handshake occurred");
+
+    info!("New WebSocket connection: {}", addr);
+
+
+    let mut watch_stream = tokio_stream::wrappers::WatchStream::new(stdout_rx).map(|data| {
+        Message::Text(data)
+    });
+
+    loop {
+        match watch_stream.next().await {
+            Some(it) => {
+                ws_stream.send(it).await.unwrap();
+            },
+            None => break,
+        };
+    }
+
+    // loop {
+    //     //https://github.com/snapview/tokio-tungstenite/blob/master/examples/interval-server.rs
+    //     if stdout_rx.changed().await.is_err() {
+    //         break;
+    //     }
+
+    //     let msg = Arc::new(stdout_rx.borrow());
+    //     let msg_c = msg.to_string();
+
+    //     let mess = tokio_tungstenite::tungstenite::Message::text(msg_c);
+
+        
+
+    // };
 
     Ok(())
 }
