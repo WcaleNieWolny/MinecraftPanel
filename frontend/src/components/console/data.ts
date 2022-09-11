@@ -1,13 +1,11 @@
 let idCounter = 0;
 
-export function getData(count: number) {
+export function getData(count: number): { id: string; text: string; }[] {
   const data = [];
   for (let index = 0; index < count; index++) {
     data.push({
       id: String(idCounter++),
-      text: Math.random()
-        .toString(16)
-        .substr(10),
+      text: "Connecting...",
     });
   }
   return data;

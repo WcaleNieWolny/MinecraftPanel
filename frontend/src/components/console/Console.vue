@@ -2,8 +2,8 @@
     <header>
         <div>
             <h1 style="text-align: center;">Console Window</h1>
-            <Textfield/>
-            <Input text="Send"/>
+            <Textfield ref="textfield"/>
+            <Input @console-data-send="handleConsoleDataSend" text="Send"/>
         </div>
     </header>  
 </template>
@@ -20,5 +20,11 @@ export default {
         Input,
         Textfield,
     },
+
+    methods: {
+        handleConsoleDataSend(data){
+            this.$refs.textfield.pushData(`> ${data}`)
+        }
+    }
 }
 </script>

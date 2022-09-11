@@ -1,3 +1,6 @@
 curl -H "Content-Type: application/json" --data '{"command":"/list"}' --request POST http://127.0.0.1:8000/api/execute_cmd
 curl http://127.0.0.1:8000/api/last_std
 curl http://127.0.0.1:8000/api/list_players
+
+NOTE: https://github.com/vi/websocat
+websocat ws://127.0.0.1:3001

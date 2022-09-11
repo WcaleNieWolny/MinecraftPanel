@@ -20,8 +20,25 @@
         },
 
         methods: {
-            onClick() {
-                console.log(this.$data.formdata.input)
+            async onClick() {
+                var data = this.$data.formdata.input
+
+                if(data === ""){
+                    return
+                }
+
+                this.$emit("console-data-send", data)
+
+                //curl -H "Content-Type: application/json" --data '{"command":"/list"}' --request POST http://127.0.0.1:8000/api/execute_cmd
+                await fetch("http://127.0.0.1:8000/api/execute_cmd", {
+                    method: 'POST',
+                    cache: 'no-cache',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ command: data })
+                })
+
                 this.$data.formdata.input = ""
             },
         }

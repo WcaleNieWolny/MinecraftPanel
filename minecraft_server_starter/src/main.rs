@@ -6,6 +6,8 @@ mod minecraft_routes;
 
 use std::{process::Stdio, env, path::PathBuf, io::{BufRead}, sync::Arc, thread};
 use config::ServerConfig;
+use rocket::http::Method;
+use rocket_cors::{AllowedOrigins, CorsOptions};
 use tokio::{sync::{Mutex, watch::Receiver}, fs::File, io::{AsyncWriteExt, AsyncReadExt}, process::Command, net::{TcpListener, TcpStream}};
 use futures_util::{StreamExt, SinkExt};
 use tokio_tungstenite::{tungstenite::{Error, Message}};
@@ -54,7 +56,20 @@ async fn main() -> anyhow::Result<()>{
 
     setup_websocket("127.0.0.1:3001", stdout_rx).await?;
 
-    let _ = rocket::build().attach(minecraft_routes::stage(server_process)).launch().await;
+    let cors = CorsOptions::default()
+    .allowed_origins(AllowedOrigins::all())
+    .allowed_methods(
+        vec![Method::Get, Method::Post, Method::Patch]
+            .into_iter()
+            .map(From::from)
+            .collect(),
+    )
+    .allow_credentials(false);
+
+    let _ = rocket::build()
+    .attach(minecraft_routes::stage(server_process))
+    .attach(cors.to_cors().unwrap())
+    .launch().await;
 
     Ok(())
 }
@@ -103,26 +118,16 @@ async fn handle_websocket_connection(_peer: std::net::SocketAddr, stream: TcpStr
     loop {
         match watch_stream.next().await {
             Some(it) => {
-                ws_stream.send(it).await.unwrap();
+                match ws_stream.send(it).await {
+                    Ok(_) => {}
+                    Err(_) => {
+                        break;
+                    }
+                };
             },
             None => break,
         };
     }
-
-    // loop {
-    //     //https://github.com/snapview/tokio-tungstenite/blob/master/examples/interval-server.rs
-    //     if stdout_rx.changed().await.is_err() {
-    //         break;
-    //     }
-
-    //     let msg = Arc::new(stdout_rx.borrow());
-    //     let msg_c = msg.to_string();
-
-    //     let mess = tokio_tungstenite::tungstenite::Message::text(msg_c);
-
-        
-
-    // };
 
     Ok(())
 }

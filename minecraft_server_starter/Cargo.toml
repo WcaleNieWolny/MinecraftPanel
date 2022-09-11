@@ -17,3 +17,4 @@ regex = "1.6.0"
 tokio-tungstenite = "*"
 futures-util = { version = "0.3", features = ["async-await", "sink", "std"] }
 tokio-stream = { version = "0.1.9", features = ["sync"] }
+rocket_cors = { git = "https://github.com/lawliet89/rocket_cors", branch = "master" }
