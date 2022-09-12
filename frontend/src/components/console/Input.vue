@@ -1,7 +1,7 @@
 <template>
     <div class="main">
         <input class="input" v-model="formdata.input" placeholder="minecraft command"/>
-        <button class="button" @click="onClick()">{{ text }}</button>
+        <button class="button" @click="onClick()"><svg height="34px" width="34px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m23.968 0-23.968 10.286h13.68v13.714z"/></svg></button>
     </div>
 </template>
 
@@ -47,24 +47,13 @@
 
 <style scoped>
     .main {
-        height: 5hv;
-        max-width: 95%;
-        margin-top: 1px;
-        margin: auto;
-        display: flex;
-        justify-content: center;
-        align-items: center;
+        @apply flex h-[5hv] max-w-[95%] mt-1 ml-auto mr-auto mb-auto justify-center items-center border-solid border-2 border-zinc-800 bg-zinc-400
     }
 
     .input {
-        float: left;
-        width:  95%;
-        height: 2.5vh;
+        @apply ml-1 outline-none float-left w-[93%] h-9 bg-zinc-400
     }
     .button {
-        border: none;
-        float: right;
-        width:  5%;
-        height: 3vh;
+        @apply border-none float-right ml-auto mr-2 max-w-[7%] h-[3vh]
     }
 </style>

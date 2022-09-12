@@ -1,7 +1,7 @@
 <template>
     <header>
         <div>
-            <h1 style="text-align: center;">Console Window</h1>
+            <h1 class="text-center">Console Window</h1>
             <Textfield ref="textfield"/>
             <Input @console-data-send="handleConsoleDataSend" text="Send"/>
         </div>

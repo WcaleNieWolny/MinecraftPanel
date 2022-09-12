@@ -71,11 +71,11 @@ export default {
   display: block;
   width: 95%;
   border: 2px solid red;
-  min-height: 85vh;
-  max-height: 85vh;
+  min-height: 92vh;
+  max-height: 92vh;
   /* min-height: 10vh;
   max-height: 10vh; */
-  line-height: 0.2;
+  line-height: 1;
   font-size: 1.115rem;
   margin: 0 auto;
   margin-left: 0 auto;
