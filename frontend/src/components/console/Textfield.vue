@@ -2,8 +2,8 @@
   <div id="app" class="">
     <div class="wrapper">
       <div class="list" ref="list">
-        <p  v-for="item in items" :key="item">
-          {{item.text}}
+        <p v-for="item in items" :key="item">
+          <span v-html="item.html"></span>
         </p>
       </div>
     </div>
@@ -13,27 +13,30 @@
 <script lang="ts">
 import Item from './Item.vue'
 import { getData } from './data'
+import Convert from 'ansi-to-html'
 
 export default {
   name: 'App',
   data() {
     return {
       item: Item,
-      items: getData(1)
+      items: getData(1),
     }
   },
   components: {
     Item,
   },
   methods: {
-    pushData(string: string){
+    pushData(string: string, convert: boolean = true){
       this.$data.items.push({
         id: String(this.$data.items.length),
         text: string,
+        html: (convert) ? new Convert().toHtml(string) : string,
       });
     },
   },
   mounted() {
+    
     let socket = new WebSocket("ws://127.0.0.1:3001")
 
     let pushData = this.pushData;
@@ -43,6 +46,7 @@ export default {
     });
 
     socket.addEventListener('message', function (event) {
+        console.log(event.data)
         pushData(event.data)
     });
 
