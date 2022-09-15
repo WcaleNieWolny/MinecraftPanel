@@ -26,20 +26,10 @@ async fn main() -> anyhow::Result<()>{
     let server_jar_path_str = server_jar_path.to_str().expect("Couldn't format server jar path to string");
     let server_jar_pwd_path = server_jar_path.parent().expect("Coudln't find parrent path for server jar");
 
-    // let cmd = Command::new("java")
-    //     .arg("-jar")
-    //     .arg(server_jar_path_str)
-    //     .arg("nogui")
-    //     .env("NO_COLOR", "false")
-    //     .current_dir(server_jar_pwd_path)
-    //     .stdout(Stdio::piped()) // Can do the same for stderr
-    //     .stdin(Stdio::piped())
-    //     .spawn()
-    //     .expect("cannot spawn");
-
-    let cmd = Command::new("script")
-        .arg("-qec")
-        .arg(format!("java -jar {} nogui", server_jar_path_str))
+    let cmd = Command::new("java")
+        .arg("-jar")
+        .arg(server_jar_path_str)
+        .arg("nogui")
         .current_dir(server_jar_pwd_path)
         .stdout(Stdio::piped()) // Can do the same for stderr
         .stdin(Stdio::piped())
