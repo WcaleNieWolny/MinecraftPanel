@@ -1,5 +1,5 @@
 <template>
-    <div class="main" @keyup="onKeyup">
+    <div class="main" @keydown="onKeydown">
         <input class="input" v-model="formdata.input" placeholder="minecraft command"/>
         <button class="button" @click="onClick()"><svg height="34px" width="34px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m23.968 0-23.968 10.286h13.68v13.714z"/></svg></button>
     </div>
@@ -11,7 +11,9 @@
 
         data() {
             return {
-                formdata: { input: ''}
+                formdata: { input: ''},
+                history: [] as string[],
+                historyIndex: -1
             }
         },
 
@@ -39,11 +41,64 @@
                     body: JSON.stringify({ command: data })
                 })
 
+                this.$data.history.push(data)
                 this.$data.formdata.input = ""
             },
-            async onKeyup(event: KeyboardEvent) {
-                if(event.key === "Enter"){
-                    await this.onClick();
+
+            async handleHistory(index: number, history: string[]){
+                
+
+                var command = history[index]
+                if(this.$data.formdata.input !== command){
+                    this.$data.formdata.input = command
+                }
+            },
+
+            async onKeydown(event: KeyboardEvent) {
+                switch (event.key){
+                    case "Enter":
+                        await this.onClick();
+                        break;
+                    case "ArrowUp":
+                        var history = this.$data.history;
+                        if(history.length === 0){
+                            return
+                        }
+
+                        event.preventDefault() 
+                        
+                        var index;
+                        if(this.$data.historyIndex === -1){
+                            index = history.length - 1
+                            this.$data.historyIndex = index
+                        }else{
+                            index = this.$data.historyIndex
+                            if(index > 0){
+                                index--
+                                this.$data.historyIndex = index
+                            }
+                        }
+
+                        await this.handleHistory(index, history)
+                        break
+                    case "ArrowDown":
+                        var history = this.$data.history;
+                        if(history.length === 0){
+                            return
+                        }
+
+                        event.preventDefault()
+                        
+                        var index //did not work when inline declaring var (?)
+                        index = this.$data.historyIndex
+
+                        if(history.length > index + 1 || history.length === index){
+                            index++
+                            this.$data.historyIndex = index
+                        }
+
+                        await this.handleHistory(index, history)
+                        break
                 }
             },
         }
