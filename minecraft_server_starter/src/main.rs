@@ -68,8 +68,21 @@ async fn main() -> anyhow::Result<()>{
     )
     .allow_credentials(false);
 
+    let rocket_config = rocket::Config {
+        shutdown: rocket::config::Shutdown {
+            ctrlc: true,
+            grace: 5,
+            mercy: 10,
+            force: true,
+            ..Default::default()
+        },
+        ..rocket::Config::default()
+    };
+
     let _ = rocket::build()
-    .attach(minecraft_routes::stage(server_process))
+    .configure(rocket_config)
+    .attach(minecraft_routes::stage(server_process.clone()))
+    .attach(minecraft_routes::shutdown_hook(server_process))
     .attach(cors.to_cors().unwrap())
     .launch().await;
 

@@ -66,6 +66,10 @@ impl ServerProcess {
         }
     }
 
+    pub async fn await_shutdown(&mut self){
+        self.process.wait().await.expect("Couldn't wait for process to finish");
+    }
+
     pub fn write_to_stdin(&mut self, message: String){
         Self::check_process_running(&mut self.process);
         self.stdin_tx.send(message).expect("Couldn't pass message to sending task");

@@ -11,7 +11,6 @@
 </template>
 
 <script lang="ts">
-import Item from './Item.vue'
 import { getData } from './data'
 import Convert from 'ansi-to-html'
 
@@ -19,12 +18,8 @@ export default {
   name: 'App',
   data() {
     return {
-      item: Item,
       items: getData(1)
     }
-  },
-  components: {
-    Item,
   },
   methods: {
     pushData(string: string, parseAnsi = true){

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use rocket::{State, fairing::AdHoc};
 use rocket::serde::json::Json;
-use serde::{Serialize, Deserialize};
+use serde::{Serialize, Deserialize, ser};
 use serde_json::{json};
 use tokio::sync::Mutex;
 
@@ -50,4 +50,13 @@ pub fn stage(server_process: Arc<tokio::sync::Mutex<ServerProcess>>) -> AdHoc {
         rocket.manage(server_process)
             .mount("/api", routes![last_std, execute_cmd, list_players])
     })
+}
+
+pub fn shutdown_hook(server_process: Arc<tokio::sync::Mutex<ServerProcess>>) -> AdHoc {
+    AdHoc::on_shutdown("shutdown hook!", |_| Box::pin(async move {
+        println!("WHOLE BACKEND IS SHUTING DOWN!!!");
+        let mut process = server_process.lock().await;
+        process.write_to_stdin("stop".to_string());
+        process.await_shutdown().await;
+    }))
 }
