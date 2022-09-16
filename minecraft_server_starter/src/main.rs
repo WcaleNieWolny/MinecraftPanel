@@ -27,6 +27,8 @@ async fn main() -> anyhow::Result<()>{
     let server_jar_pwd_path = server_jar_path.parent().expect("Coudln't find parrent path for server jar");
 
     let cmd = Command::new("java")
+        .arg("-Dterminal.jline=false")
+        .arg("-Dterminal.ansi=true")
         .arg("-jar")
         .arg(server_jar_path_str)
         .arg("nogui")

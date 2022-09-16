@@ -3,7 +3,7 @@
     <div class="wrapper">
       <div class="list" ref="list">
         <p  v-for="item in items" :key="item">
-          {{item.text}}
+          <span v-html="item.html"></span>
         </p>
       </div>
     </div>
@@ -13,6 +13,7 @@
 <script lang="ts">
 import Item from './Item.vue'
 import { getData } from './data'
+import Convert from 'ansi-to-html'
 
 export default {
   name: 'App',
@@ -26,10 +27,11 @@ export default {
     Item,
   },
   methods: {
-    pushData(string: string){
+    pushData(string: string, parseAnsi = true){
       this.$data.items.push({
         id: String(this.$data.items.length),
         text: string,
+        html: parseAnsi ? new Convert().toHtml(string) : string
       });
     },
   },

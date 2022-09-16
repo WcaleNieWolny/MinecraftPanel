@@ -1,5 +1,5 @@
 <template>
-    <div class="main">
+    <div class="main" @keyup="onKeyup">
         <input class="input" v-model="formdata.input" placeholder="minecraft command"/>
         <button class="button" @click="onClick()"><svg height="34px" width="34px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m23.968 0-23.968 10.286h13.68v13.714z"/></svg></button>
     </div>
@@ -40,6 +40,11 @@
                 })
 
                 this.$data.formdata.input = ""
+            },
+            async onKeyup(event: KeyboardEvent) {
+                if(event.key === "Enter"){
+                    await this.onClick();
+                }
             },
         }
     }

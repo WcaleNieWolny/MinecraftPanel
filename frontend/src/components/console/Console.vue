@@ -23,7 +23,7 @@ export default {
 
     methods: {
         handleConsoleDataSend(data){
-            this.$refs.textfield.pushData(`> ${data}`)
+            this.$refs.textfield.pushData(`> ${data}`, false)
         }
     }
 }
