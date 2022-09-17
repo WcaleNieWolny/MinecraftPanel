@@ -71,8 +71,8 @@ async fn main() -> anyhow::Result<()>{
     let rocket_config = rocket::Config {
         shutdown: rocket::config::Shutdown {
             ctrlc: true,
-            grace: 5,
-            mercy: 10,
+            grace: 1,
+            mercy: 1,
             force: true,
             ..Default::default()
         },

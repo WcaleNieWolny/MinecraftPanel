@@ -19,6 +19,9 @@ futures-util = { version = "0.3", features = ["async-await", "sink", "std"] }
 tokio-stream = { version = "0.1.9", features = ["sync"] }
 rocket_cors = { git = "https://github.com/lawliet89/rocket_cors", branch = "master" }
 
+[target.'cfg(unix)'.dependencies]
+nix = "0.25.0"
+
 [profile.release]
 opt-level = 'z'     # Optimize for size.
 lto = true          # Enable Link Time Optimization

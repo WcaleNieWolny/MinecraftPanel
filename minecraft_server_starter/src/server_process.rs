@@ -66,8 +66,36 @@ impl ServerProcess {
         }
     }
 
+    fn send_termination_signal(&mut self){
+        if cfg!(unix){
+            nix::sys::signal::kill(
+                nix::unistd::Pid::from_raw(self.process.id().unwrap() as i32),
+                nix::sys::signal::Signal::SIGTERM)
+                .expect("Couldn't send UNIX SIGTEM");
+            println!("SEND UNIX TERMINATION SIGNAL!")
+        }else{
+            self.write_to_stdin("stop".to_string());
+        }
+    }
+
     pub async fn await_shutdown(&mut self){
-        self.process.wait().await.expect("Couldn't wait for process to finish");
+        Self::send_termination_signal(self);
+        let sleep = tokio::time::sleep(std::time::Duration::from_secs(15));
+
+        tokio::select! {
+            biased;
+            exit_code = async {
+                self.process.wait().await
+            } => {
+                println!("EXIT CODE: {}", exit_code.unwrap())
+            },
+
+            _ = async {
+                sleep.await
+            } => {
+                println!("We couldn't get exit code of a child process! Server will proceed to kill it!")
+            }
+        };
     }
 
     pub fn write_to_stdin(&mut self, message: String){

@@ -56,7 +56,7 @@ pub fn shutdown_hook(server_process: Arc<tokio::sync::Mutex<ServerProcess>>) -> 
     AdHoc::on_shutdown("shutdown hook!", |_| Box::pin(async move {
         println!("WHOLE BACKEND IS SHUTING DOWN!!!");
         let mut process = server_process.lock().await;
-        process.write_to_stdin("stop".to_string());
         process.await_shutdown().await;
+        println!("SHUTDOWN COMPLEATED")
     }))
 }
