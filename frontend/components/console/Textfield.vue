@@ -1,7 +1,7 @@
 <template>
   <div id="app" class="">
     <div class="wrapper">
-      <div class="list" ref="list">
+      <div class="w-[95%] border-2 border-cyan-700 border-solid max-h-[93vh] min-h-[93vh] rounded-lg leading-none text-lg m-auto overflow-x-scroll overflow-y-hidden bg-zinc-800" ref="list">
         <p  v-for="item in items" :key="item">
           <span v-html="item.html"></span>
         </p>
@@ -51,35 +51,3 @@ export default {
   },
 }
 </script>
-
-<style>
-.this_aaa {
-  display: block;
-  width: 95%;
-  color: #2c3e50;
-  margin: 0 auto;
-  margin-left: 0 auto;
-  margin-right: 0 auto;
-  min-height: 85vh;
-  max-height: 85vh;
-  padding: 1em;
-}
-.list {
-  display: block;
-  width: 95%;
-  border: 2px solid red;
-  min-height: 92vh;
-  max-height: 92vh;
-  /* min-height: 10vh;
-  max-height: 10vh; */
-  line-height: 1;
-  font-size: 1.115rem;
-  margin: 0 auto;
-  margin-left: 0 auto;
-  margin-right: 0 auto;
-  border-radius: 3px;
-  overflow:scroll;
-  overflow-x: scroll;
-  overflow-y: none;
-}
-</style>
