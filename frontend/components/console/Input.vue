@@ -111,7 +111,7 @@
     }
 
     .input {
-        @apply ml-1 outline-none float-left w-[93%] h-9 bg-zinc-400
+        @apply ml-1 outline-none float-left w-[93%] h-9 bg-zinc-400 placeholder-zinc-500
     }
     .button {
         @apply border-none float-right ml-auto mr-2 max-w-[7%] h-[3vh]

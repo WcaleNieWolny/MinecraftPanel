@@ -1,22 +1,17 @@
 {
-  "name": "@example/basics",
-  "version": "0.0.1",
   "private": true,
   "scripts": {
-    "dev": "astro dev",
-    "start": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
-    "astro": "astro"
-  },
-  "dependencies": {
-    "ansi-to-html": "^0.7.2",
-    "astro": "^1.1.5",
-    "vue-virtual-scroll-list": "^2.3.4"
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
   },
   "devDependencies": {
-    "@astrojs/tailwind": "^1.0.0",
-    "@astrojs/vue": "^1.0.0",
-    "vue": "^3.2.38"
+    "@nuxtjs/tailwindcss": "^5.3.3",
+    "nuxt": "3.0.0-rc.10"
+  },
+  "dependencies": {
+    "ansi-to-html": "^0.7.2"
   }
 }
