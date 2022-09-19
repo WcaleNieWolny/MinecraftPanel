@@ -1,9 +1,9 @@
 <template>
   <div id="app" class="">
     <div class="wrapper">
-      <div class="w-[95%] border-2 border-cyan-700 border-solid max-h-[93vh] min-h-[93vh] rounded-lg leading-none text-lg m-auto overflow-x-scroll overflow-y-hidden bg-zinc-800" ref="list">
+      <div class="w-[95%] border-2 border-cyan-700 border-solid max-h-[93vh] min-h-[93vh] rounded-lg leading-none text-lg m-auto overflow-x-scroll overflow-y-scroll bg-zinc-800" ref="list">
         <p  v-for="item in items" :key="item">
-          <span v-html="item.html"></span>
+          <span v-html="item.html" class="text-zinc-300"></span>
         </p>
       </div>
     </div>
@@ -18,7 +18,8 @@ export default {
   name: 'App',
   data() {
     return {
-      items: getData(1)
+      items: getData(1),
+      converter: new Convert()
     }
   },
   methods: {
@@ -26,7 +27,7 @@ export default {
       this.$data.items.push({
         id: String(this.$data.items.length),
         text: string,
-        html: parseAnsi ? new Convert().toHtml(string) : string
+        html: parseAnsi ? this.$data.converter.toHtml(string) : string
       });
     },
   },

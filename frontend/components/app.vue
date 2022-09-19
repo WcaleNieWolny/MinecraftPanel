@@ -1,5 +1,5 @@
 <template>
   <div class="bg-zinc-600 h-screen">
-    <Console />
+    <LoginScreen />
   </div>
 </template>
