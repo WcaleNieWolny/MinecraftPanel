@@ -7,11 +7,11 @@
             <div class="content-center flex justify-center flex-col">
                 <form class="text-center">
                 <label class="text-white" for="fname">Username:</label><br>
-                <input type="text" id="username" name="username" class="h-8 bg-zinc-600"><br><br>
+                <input type="text" id="username" name="username" class="h-8 bg-zinc-600 border-2 border-cyan-700 border-solid rounded-md w-64"><br><br>
                 <label class="text-white" for="pwd">Password:</label><br>
-                <input type="password" id="pwd" name="lname" class="h-8 bg-zinc-600"><br>
+                <input type="password" id="pwd" name="lname" class="h-8 bg-zinc-600 border-2 border-cyan-700 border-solid rounded-md w-64"><br>
                 <br>
-                <input type="submit" value="Submit">
+                <input class="text-white border-2 bg-zinc-600 border-cyan-700 border-solid rounded-md w-16" type="submit" value="Submit">
             </form> 
             </div>
         </div>
