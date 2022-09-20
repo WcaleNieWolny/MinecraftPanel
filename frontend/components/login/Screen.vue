@@ -30,8 +30,28 @@
         const name = password.value
 
         if(password.length == 0 || username.length == 0){
+            console.log("!zero")
             return
         }
+
+        console.log("non zero")
+
+        await fetch(`${apiUrl.value}/auth/authenticate_user`, {    
+            method: 'POST',
+            cache: 'no-cache',
+            credentials: 'include',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ username: name, password: pwd })
+        })
+
+        console.log(document.cookie)
+
+        await fetch(`${apiUrl.value}/auth/test`, {
+            method: 'GET',
+            credentials: 'include'
+        })
 
     }
 

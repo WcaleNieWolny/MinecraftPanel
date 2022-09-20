@@ -67,7 +67,7 @@ async fn main() -> anyhow::Result<()>{
             .map(From::from)
             .collect(),
     )
-    .allow_credentials(false);
+    .allow_credentials(true);
 
     let rocket_config = rocket::Config {
         shutdown: rocket::config::Shutdown {
