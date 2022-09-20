@@ -1,0 +1,1 @@
+export const useApiUrl = () => useState<string>('apiUrl', () => 'http://127.0.0.1:8000/api')
