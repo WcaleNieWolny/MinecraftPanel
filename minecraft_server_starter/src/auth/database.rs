@@ -1,3 +1,3 @@
 
-#[database("diesel")]
-struct Db(diesel::SqliteConnection);
+// #[database("diesel")]
+// struct Db(diesel::SqliteConnection);
