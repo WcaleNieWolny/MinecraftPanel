@@ -12,7 +12,11 @@ struct LoginForm {
 #[post("/authenticate_user", format="json", data = "<message>")]
 fn authenticate_user(jar: &CookieJar<'_>, message: Json<LoginForm>) -> rocket::serde::json::Value {
 
-    jar.add_private(Cookie::new("user_id", 1.to_string()));
+    jar.add_private(
+        Cookie::build("user_id", 1.to_string())
+            .same_site(SameSite::None)
+            .finish()
+    );
 
     println!("{:?}", message);
 

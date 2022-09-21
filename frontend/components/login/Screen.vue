@@ -29,7 +29,7 @@
         const pwd = username.value
         const name = password.value
 
-        if(password.length == 0 || username.length == 0){
+        if(pwd.length == 0 || name.length == 0){
             console.log("!zero")
             return
         }
