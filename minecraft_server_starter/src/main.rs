@@ -84,7 +84,7 @@ async fn main() -> anyhow::Result<()>{
     .configure(rocket_config)
     .attach(minecraft_routes::stage(server_process.clone()))
     .attach(minecraft_routes::shutdown_hook(server_process))
-    .attach(auth_routes::stage())
+    .attach(auth_routes::stage(config.clone()))
     .attach(cors.to_cors().unwrap())
     .launch().await;
 
@@ -156,9 +156,7 @@ async fn get_config() -> anyhow::Result<ServerConfig>{
     let mut config_file = File::open(path.clone()).await?;
 
     if config_file.metadata().await.unwrap().len() == 0 {
-        let config = ServerConfig{
-            version: "paper-1.18.2".to_string()
-        };
+        let config = ServerConfig::default();
 
         let mut config_file = File::create(path).await?;
         config_file.write(toml::to_string(&config).unwrap().as_bytes()).await?;
@@ -169,8 +167,9 @@ async fn get_config() -> anyhow::Result<ServerConfig>{
     let mut config_contents = vec![];
     config_file.read_to_end(&mut config_contents).await?;
     let config_contents = String::from_utf8(config_contents)?;
+    let leaked: &'static str = Box::leak(config_contents.to_string().into_boxed_str());
 
-    let config: ServerConfig = toml::from_str(&config_contents)?;
+    let config: ServerConfig = toml::from_str(&leaked)?;
 
     Ok(config)
 }

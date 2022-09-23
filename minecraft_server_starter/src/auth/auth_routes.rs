@@ -2,6 +2,11 @@ use rocket::http::{CookieJar, Cookie, SameSite};
 use rocket::{fairing::AdHoc};
 use rocket::serde::{Deserialize, json::Json, json::json};
 
+use crate::config::{self, ServerConfig};
+
+use super::database::{self, Connection};
+use super::models::User;
+
 #[derive(Debug, Deserialize)]
 struct LoginForm {
     username: String,
@@ -23,8 +28,8 @@ fn authenticate_user(jar: &CookieJar<'_>, message: Json<LoginForm>) -> rocket::s
     json!({ "status": "OK" })
 }
 
-#[get("/test")]
-fn test(jar: &CookieJar<'_>){
+#[get("/get")]
+fn get(jar: &CookieJar<'_>, mut connection: Connection){
     //Fix get_private returning NONE
     let val = jar.get_private("user_id");
 
@@ -33,9 +38,12 @@ fn test(jar: &CookieJar<'_>){
     for c in jar.iter() {
         println!("Name: {:?}, Value: {:?}", c.name(), c.value());
         println!("HL {:?}", jar.get_private(c.name()))
-//TEST AA!
-//Name: "user_id", Value: "S5bTvL2/WmZaEjkqiPLRvEcmb+Ev7Hx5AwjdOxY="
-//HL None
+    }
+
+    let users = User::read(&mut connection);
+
+    for u in users.iter(){
+        println!("U: {:?}", u)
     }
 
     if val.is_some(){
@@ -45,8 +53,9 @@ fn test(jar: &CookieJar<'_>){
     }
 }
 
-pub fn stage() -> AdHoc {
+pub fn stage(config: ServerConfig) -> AdHoc {
     AdHoc::on_ignite("Auth Stage", |rocket| async {
-        rocket.mount("/auth", routes![authenticate_user, test])
+        rocket.mount("/auth", routes![authenticate_user, get])
+            .manage(database::connect(config))
     })
 }
