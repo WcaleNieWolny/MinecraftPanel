@@ -40,7 +40,7 @@ fn get(jar: &CookieJar<'_>, mut connection: Connection){
         println!("HL {:?}", jar.get_private(c.name()))
     }
 
-    let users = User::read(&mut connection);
+    let users = User::read_all(&mut connection);
 
     for u in users.iter(){
         println!("U: {:?}", u)

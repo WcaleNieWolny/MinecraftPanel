@@ -785,6 +785,7 @@ dependencies = [
  "diesel",
  "futures-util",
  "nix",
+ "rand",
  "regex",
  "reqwest",
  "rocket",
