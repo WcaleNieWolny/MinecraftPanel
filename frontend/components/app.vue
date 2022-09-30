@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-zinc-600 h-screen">
+  <div class="bg-zinc-700 h-screen">
     <LoginScreen />
   </div>
 </template>
