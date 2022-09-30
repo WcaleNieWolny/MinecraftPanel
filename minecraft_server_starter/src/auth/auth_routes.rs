@@ -1,4 +1,5 @@
-use rocket::http::{CookieJar, Cookie, SameSite};
+use rocket::http::{CookieJar, Cookie, SameSite, Status};
+use rocket::response::status::{self, NotFound, Forbidden};
 use rocket::{fairing::AdHoc};
 use rocket::serde::{Deserialize, json::Json, json::json};
 
@@ -15,7 +16,7 @@ struct LoginForm {
 //POST /auth/authenticate_user application/json
 //POST /api/auth/authenticate_user application/json
 #[post("/authenticate_user", format="json", data = "<message>")]
-fn authenticate_user(jar: &CookieJar<'_>, message: Json<LoginForm>) -> rocket::serde::json::Value {
+fn authenticate_user(jar: &CookieJar<'_>, message: Json<LoginForm>, mut connection: Connection) ->  Result<rocket::serde::json::Value, status::Forbidden<()>> {
 
     jar.add_private(
         Cookie::build("user_id", 1.to_string())
@@ -23,9 +24,19 @@ fn authenticate_user(jar: &CookieJar<'_>, message: Json<LoginForm>) -> rocket::s
             .finish()
     );
 
-    println!("{:?}", message);
+    let password = &message.password;
+    let username = &message.username;
 
-    json!({ "status": "OK" })
+    let user = User::read_by_username(username, &mut connection);
+
+    match user {
+        Ok(user) => {
+            Ok (json!({ "status": "OK" }))
+        },
+        Err(_) => {
+            Err(Forbidden(None))
+        }
+    }
 }
 
 #[get("/get")]
