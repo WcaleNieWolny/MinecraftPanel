@@ -16,8 +16,8 @@
             </div>
         </div>
         <!-- bg-gradient-to-r from-sky-800 to-indigo-800 -->
-        <div :style="{visibility: showError ? 'visible' : 'hidden'}" class="text-center w-[19rem] shadow-inner pl-20 pr-20 mb-auto ml-auto mr-auto mt-6 bg-zinc-800 text-white border-solid rounded-md delay-75">
-            <h3>Invalid password!</h3>
+        <div :style="{visibility: showError ? 'visible' : 'hidden'}" class="text-center w-[18rem] shadow-inner pl-5 pr-5 mb-auto ml-auto mr-auto mt-6 bg-zinc-800 text-white border-solid rounded-md delay-75">
+            <h3>Invalid username or password!</h3>
         </div>
     </div>
 </template>
@@ -30,17 +30,14 @@
     var showError = ref(false)
 
     const submitAuthForm = async () => {
-        const pwd = username.value
-        const name = password.value
-
-        showError.value = true;
+        const pwd = password.value
+        const name = username.value
 
         if(pwd.length == 0 || name.length == 0){
-            console.log("!zero")
             return
         }
-        console.log("non zero")
-        await fetch(`${apiUrl.value}/auth/authenticate_user`, {    
+        
+        let response = await fetch(`${apiUrl.value}/auth/authenticate_user`, {    
             method: 'POST',
             cache: 'no-cache',
             credentials: 'include',
@@ -49,7 +46,11 @@
             },
             body: JSON.stringify({ username: name, password: pwd })
         })
-        console.log(document.cookie)
+
+        if(response.status === 400){
+            showError.value = true;
+        }
+
         await fetch(`${apiUrl.value}/auth/test`, {
             method: 'GET',
             credentials: 'include'

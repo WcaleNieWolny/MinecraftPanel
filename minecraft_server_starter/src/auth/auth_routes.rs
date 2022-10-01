@@ -1,5 +1,7 @@
+use argon2::{Argon2, Params, PasswordHash, PasswordVerifier};
+use rocket::State;
 use rocket::http::{CookieJar, Cookie, SameSite, Status};
-use rocket::response::status::{self, NotFound, Forbidden};
+use rocket::response::status::{self, NotFound, Forbidden, BadRequest};
 use rocket::{fairing::AdHoc};
 use rocket::serde::{Deserialize, json::Json, json::json};
 
@@ -15,8 +17,9 @@ struct LoginForm {
 }
 //POST /auth/authenticate_user application/json
 //POST /api/auth/authenticate_user application/json
+//Admin pwd: jz6u8s0ea24HcMK
 #[post("/authenticate_user", format="json", data = "<message>")]
-fn authenticate_user(jar: &CookieJar<'_>, message: Json<LoginForm>, mut connection: Connection) ->  Result<rocket::serde::json::Value, status::Forbidden<()>> {
+fn authenticate_user(jar: &CookieJar<'_>, message: Json<LoginForm>, argon: &State<Argon2>, mut connection: Connection) ->  Result<rocket::serde::json::Value, status::BadRequest<String>> {
 
     jar.add_private(
         Cookie::build("user_id", 1.to_string())
@@ -31,42 +34,41 @@ fn authenticate_user(jar: &CookieJar<'_>, message: Json<LoginForm>, mut connecti
 
     match user {
         Ok(user) => {
-            Ok (json!({ "status": "OK" }))
+            let parsed_hash = match PasswordHash::new(&user.password) {
+                Ok(val) => val,
+                Err(_) => return Err(BadRequest(Some("Internal error".to_string()))),
+            };
+
+            if argon.inner().verify_password(password.as_bytes(), &parsed_hash).is_ok(){
+                println!("PWD MATCH!");
+                Ok (json!({ "status": "OK" }))
+            }else{
+                Err(BadRequest(Some("Invalid credentials".to_string())))
+            }
         },
         Err(_) => {
-            Err(Forbidden(None))
+            Err(BadRequest(Some("Invalid credentials".to_string())))
         }
     }
 }
 
-#[get("/get")]
-fn get(jar: &CookieJar<'_>, mut connection: Connection){
-    //Fix get_private returning NONE
-    let val = jar.get_private("user_id");
-
-    println!("TEST AA!");
-
-    for c in jar.iter() {
-        println!("Name: {:?}, Value: {:?}", c.name(), c.value());
-        println!("HL {:?}", jar.get_private(c.name()))
-    }
-
-    let users = User::read_all(&mut connection);
-
-    for u in users.iter(){
-        println!("U: {:?}", u)
-    }
-
-    if val.is_some(){
-        println!("{}", val.unwrap())
-    }else {
-        println!("NULL!")
-    }
-}
-
 pub fn stage(config: ServerConfig) -> AdHoc {
+
     AdHoc::on_ignite("Auth Stage", |rocket| async {
-        rocket.mount("/auth", routes![authenticate_user, get])
-            .manage(database::connect(config))
+
+        let argon = Argon2::new(
+            argon2::Algorithm::Argon2id,
+             argon2::Version::V0x13,
+              Params::new(
+                163864u32,
+                2,
+                1,
+                None 
+            ).unwrap()
+        );
+
+        rocket.mount("/auth", routes![authenticate_user])
+            .manage(database::connect(config, &argon))
+            .manage(argon)
     })
 }

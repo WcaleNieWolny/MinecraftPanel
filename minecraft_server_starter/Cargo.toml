@@ -19,7 +19,9 @@ futures-util = { version = "0.3", features = ["async-await", "sink", "std"] }
 tokio-stream = { version = "0.1.9", features = ["sync"] }
 rocket_cors = { git = "https://github.com/lawliet89/rocket_cors", branch = "master" }
 diesel = { version = "2.0.0", features = ["mysql", "r2d2"] }
-rand = "0.8.5"
+rand = { version = "0.8.5", features = ["std"] }
+argon2 = "0.4"
+password-hash = { version = "0.4", features = ["std"] }
 
 # https://github.com/sean3z/rocket-diesel-rest-api-example
 

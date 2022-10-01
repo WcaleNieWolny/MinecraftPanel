@@ -1,4 +1,6 @@
+use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use diesel::prelude::*;
+use rand::rngs::OsRng;
 use serde::{Serialize, Deserialize};
 use diesel::mysql::MysqlConnection;
 
@@ -22,9 +24,27 @@ impl User {
         users::table.filter(users::username.eq(username)).first(connection)
     }
 
-    pub fn create(self, connection: &mut MysqlConnection) -> anyhow::Result<()>{
+    pub fn create(self, argon2: &Argon2, connection: &mut MysqlConnection) -> anyhow::Result<()>{
+        //We need to hash the password
+        let pwd = &self.password;
+        let salt = SaltString::generate(&mut OsRng);
+        
+        let pwd_hash = match argon2.hash_password(pwd.as_bytes(), &salt) {
+            Ok(val) => val,
+            Err(e) => return Err(anyhow::Error::msg("Couldn't hash password"))
+        };
+
+        let pwd_hash_str = pwd_hash.serialize().to_string();   
+
+        let hashed_user = Self {
+            id: self.id,
+            username: self.username,
+            password: pwd_hash_str,
+            user_type: self.user_type
+        };
+
         let res = diesel::insert_into(users::table)
-            .values(&self)
+            .values(&hashed_user)
             .execute(connection);
 
         if res.is_ok() {

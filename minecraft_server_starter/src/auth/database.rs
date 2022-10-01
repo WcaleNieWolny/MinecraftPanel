@@ -1,5 +1,6 @@
 //SRC: https://github.com/sean3z/rocket-diesel-rest-api-example/blob/master/src/db.rs
 use std::ops::{Deref, DerefMut};
+use argon2::Argon2;
 use rand::distributions::{Alphanumeric, DistString};
 use rocket::http::Status;
 use rocket::request::{self, FromRequest};
@@ -14,7 +15,7 @@ use crate::config::ServerConfig;
 pub type MysqlPool = Pool<ConnectionManager<MysqlConnection>>;
 
 /// Initialize the database pool.
-pub fn connect(config: ServerConfig) -> MysqlPool {
+pub fn connect(config: ServerConfig, argon2: &Argon2) -> MysqlPool {
     let manager = ConnectionManager::<MysqlConnection>::new(config.mysql_string);
     let pool = Pool::new(manager).expect("Failed to create pool");
 
@@ -38,7 +39,7 @@ pub fn connect(config: ServerConfig) -> MysqlPool {
             user_type: 1,
         };
 
-        user.create(&mut connection).expect("Couldn't create admin user!");
+        user.create(argon2, &mut connection).expect("Couldn't create admin user!");
     }
 
     pool
