@@ -1,2 +1,7 @@
 [default]
 secret_key = "84yZQLXgMVvvU2h7ZaUFrlICK3elOLEgemibqXjwdlI="
+
+[default.shutdown]
+ctrlc = true
+grace = 5
+mercy = 5

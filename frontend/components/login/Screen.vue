@@ -15,10 +15,18 @@
                 </form> 
             </div>
         </div>
-        <!-- bg-gradient-to-r from-sky-800 to-indigo-800 -->
-        <div :style="{visibility: showError ? 'visible' : 'hidden'}" class="text-center w-[18rem] shadow-inner pl-5 pr-5 mb-auto ml-auto mr-auto mt-6 bg-zinc-800 text-white border-solid rounded-md delay-75">
-            <h3>Invalid username or password!</h3>
+        
+        <div class="mb-auto ml-auto mr-auto mt-6">
+            <div class="h-[24px]">
+                <Transition>
+                    <div v-if="showError" class="text-center w-[18rem] shadow-inner pl-5 pr-5 mb-auto ml-auto mr-auto bg-zinc-800 text-white border-solid rounded-md delay-75">
+                        <h3>{{ errorText }}</h3>
+                        <!-- Invalid username or password! -->
+                    </div>
+                </Transition>
+            </div>
         </div>
+        
     </div>
 </template>
 
@@ -27,7 +35,11 @@
     var username = ref("")
     var password = ref("")
 
+
+    const auth = useState('auth', () => false)
+
     var showError = ref(false)
+    var errorText = ref("Checking credentials...")
 
     const submitAuthForm = async () => {
         const pwd = password.value
@@ -37,6 +49,9 @@
             return
         }
         
+        showError.value = true;
+
+        let t0 = performance.now();
         let response = await fetch(`${apiUrl.value}/auth/authenticate_user`, {    
             method: 'POST',
             cache: 'no-cache',
@@ -46,15 +61,17 @@
             },
             body: JSON.stringify({ username: name, password: pwd })
         })
+        let t1= performance.now();
 
         if(response.status === 400){
-            showError.value = true;
+            let took = (t1-t0);
+            if (took < 400) {
+                await new Promise(resolve => setTimeout(resolve, 400 - took))
+            }
+            errorText.value = "Invalid username or password!"
+        }else{
+            navigateTo("console/")
         }
-
-        await fetch(`${apiUrl.value}/auth/test`, {
-            method: 'GET',
-            credentials: 'include'
-        })
     }
 </script>
 
@@ -67,6 +84,16 @@
   .shadow-xxl {
     box-shadow: rgba(0, 0, 0, 0.25) 0px 54px 55px, rgba(0, 0, 0, 0.11) 0px -12px 30px, rgba(0, 0, 0, 0.11) 0px 4px 6px, rgba(0, 0, 0, 0.17) 0px 12px 13px, rgba(0, 0, 0, 0.09) 0px -3px 5px;
   }
-  /* ... */
+}
+
+/* we will explain what these classes do next! */
+.v-enter-active,
+.v-leave-active {
+  transition: opacity 0.4s ease;
+}
+
+.v-enter-from,
+.v-leave-to {
+  opacity: 0;
 }
 </style>

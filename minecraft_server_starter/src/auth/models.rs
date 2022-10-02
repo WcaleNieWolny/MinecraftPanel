@@ -31,7 +31,7 @@ impl User {
         
         let pwd_hash = match argon2.hash_password(pwd.as_bytes(), &salt) {
             Ok(val) => val,
-            Err(e) => return Err(anyhow::Error::msg("Couldn't hash password"))
+            Err(_) => return Err(anyhow::Error::msg("Couldn't hash password"))
         };
 
         let pwd_hash_str = pwd_hash.serialize().to_string();   

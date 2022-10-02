@@ -5,22 +5,19 @@
             <Textfield ref="textfield"/>
             <Input @console-data-send="handleConsoleDataSend" text="Send"/>
         </div>
-    </header>  
+    </header>
 </template>
 
 
 <script>
 import Input from './Input.vue'
 import Textfield from './Textfield.vue'
-
 export default {
     name: 'Console',
-
     components: {
         Input,
         Textfield,
     },
-
     methods: {
         handleConsoleDataSend(data){
             this.$refs.textfield.pushData(`> ${data}`, false)

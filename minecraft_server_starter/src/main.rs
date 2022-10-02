@@ -7,7 +7,7 @@ mod auth;
 
 use std::{process::Stdio, env, path::PathBuf, io::{BufRead}, sync::Arc, thread};
 use config::ServerConfig;
-use rocket::{http::Method, Config, figment::{providers::Env, Figment}};
+use rocket::{http::Method};
 use rocket_cors::{AllowedOrigins, CorsOptions};
 use tokio::{sync::{Mutex, watch::Receiver}, fs::File, io::{AsyncWriteExt, AsyncReadExt}, process::Command, net::{TcpListener, TcpStream}};
 use futures_util::{StreamExt, SinkExt};
@@ -74,6 +74,8 @@ async fn main() -> anyhow::Result<()>{
     .attach(minecraft_routes::shutdown_hook(server_process))
     .attach(auth_routes::stage(config.clone()))
     .attach(cors.to_cors().unwrap())
+    .manage(cors.to_cors().unwrap())
+    .mount("/", rocket_cors::catch_all_options_routes())
     .launch().await;
 
     Ok(())

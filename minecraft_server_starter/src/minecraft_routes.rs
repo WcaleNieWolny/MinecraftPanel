@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use rocket::{State, fairing::AdHoc};
 use rocket::serde::json::Json;
-use serde::{Serialize, Deserialize, ser};
+use serde::{Serialize, Deserialize};
 use serde_json::{json};
 use tokio::sync::Mutex;
 
