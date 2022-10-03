@@ -2,5 +2,8 @@ curl -H "Content-Type: application/json" --data '{"command":"/list"}' --request 
 curl http://127.0.0.1:8000/api/last_std
 curl http://127.0.0.1:8000/api/list_players
 
+curl -H "Content-Type: application/json" --data '{"username":"admin","password":"jz6u8s0ea24HcMK"}' --request POST http://127.0.0.1:8000/auth/authenticate_user
+curl -H "Content-Type: application/json" --data '{"username":"aaa","password":"12"}' --request POST http://127.0.0.1:8000/auth/authenticate_user
+
 NOTE: https://github.com/vi/websocat
 websocat ws://127.0.0.1:3001

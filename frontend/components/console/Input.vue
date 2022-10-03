@@ -37,6 +37,7 @@
                 await fetch("http://127.0.0.1:8000/api/execute_cmd", {    
                     method: 'POST',
                     cache: 'no-cache',
+                    credentials: 'include',
                     headers: {
                         'Content-Type': 'application/json'
                     },

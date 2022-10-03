@@ -6,6 +6,7 @@ use serde::{Serialize, Deserialize};
 use serde_json::{json};
 use tokio::sync::Mutex;
 
+use crate::auth::auth_state::{self, AuthState};
 use crate::server_process::{ServerProcess};
 
 #[get("/last_std")]
@@ -28,7 +29,11 @@ struct CommandPost {
 }
 
 #[post("/execute_cmd", format = "json", data = "<message>")]
-async fn execute_cmd(message: Json<CommandPost>, process: &State<Arc<Mutex<ServerProcess>>>) -> Option<()> {
+async fn execute_cmd(
+    message: Json<CommandPost>, 
+    process: &State<Arc<Mutex<ServerProcess>>>,
+    auth_state: AuthState
+) -> Option<()> {
     let mut cmd = message.command.clone();
     let cmd = match cmd.starts_with("/") {
         true => {

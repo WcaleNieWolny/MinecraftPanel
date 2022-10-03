@@ -1,15 +1,17 @@
 use std::thread::Thread;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
 
 use argon2::{Argon2, Params, PasswordHash, PasswordVerifier};
 use rand::Rng;
 use rocket::State;
-use rocket::http::{CookieJar, Cookie, SameSite};
+use rocket::http::{CookieJar, Cookie, SameSite, Status};
 use rocket::response::status::{self, BadRequest};
 use rocket::{fairing::AdHoc};
 use rocket::serde::{Deserialize, json::Json, json::json};
+use tokio::sync::RwLock;
 use tokio::time::Sleep;
 
+use crate::auth::auth_state::{AuthState, self};
 use crate::config::{ServerConfig};
 
 use super::database::{self, Connection};
@@ -24,13 +26,13 @@ struct LoginForm {
 //POST /api/auth/authenticate_user application/json
 //Admin pwd: jz6u8s0ea24HcMK
 #[post("/authenticate_user", format="json", data = "<message>")]
-fn authenticate_user(jar: &CookieJar<'_>, message: Json<LoginForm>, argon: &State<Argon2>, mut connection: Connection) ->  Result<rocket::serde::json::Value, status::BadRequest<String>> {
-
-    jar.add_private(
-        Cookie::build("user_id", 1.to_string())
-            .same_site(SameSite::None)
-            .finish()
-    );
+async fn authenticate_user(
+    jar: &CookieJar<'_>, 
+    message: Json<LoginForm>, 
+    argon: &State<Argon2<'_>>, 
+    mut connection: Connection,
+    cache: &State<RwLock<Vec<AuthState>>>
+) ->  Result<rocket::serde::json::Value, (Status, Option<rocket::serde::json::Value>)> {
 
     let password = &message.password;
     let username = &message.username;
@@ -41,18 +43,32 @@ fn authenticate_user(jar: &CookieJar<'_>, message: Json<LoginForm>, argon: &Stat
         Ok(user) => {
             let parsed_hash = match PasswordHash::new(&user.password) {
                 Ok(val) => val,
-                Err(_) => return Err(BadRequest(Some("Internal error".to_string()))),
+                Err(_) => return Err((Status::InternalServerError, None)),
             };
 
             if argon.inner().verify_password(password.as_bytes(), &parsed_hash).is_ok(){
                 println!("PWD MATCH!");
+
+                let auth_state = match AuthState::new(user) {
+                    Ok(auth_state) => auth_state,
+                    Err(_) => return Err((Status::InternalServerError, None)),
+                };
+
+                let auth_id = auth_state.put_in_cache(cache).await;
+
+                jar.add_private(
+                    Cookie::build("user_id", auth_id.to_string())
+                        .same_site(SameSite::None)
+                        .finish()
+                );
+              
                 Ok (json!({ "status": "OK" }))
             }else{
-                Err(BadRequest(Some("Invalid credentials".to_string())))
+                Err((Status::BadRequest, Some(json!({ "error": "Invalid credentials" }))))
             }
         },
         Err(_) => {
-            Err(BadRequest(Some("Invalid credentials".to_string())))
+            Err((Status::BadRequest, Some(json!({ "error": "Invalid credentials" }))))
         }
     }
 }

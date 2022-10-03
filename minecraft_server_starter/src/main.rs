@@ -13,7 +13,7 @@ use tokio::{sync::{Mutex, watch::Receiver}, fs::File, io::{AsyncWriteExt, AsyncR
 use futures_util::{StreamExt, SinkExt};
 use tokio_tungstenite::{tungstenite::{Error, Message}};
 
-use crate::{server_process::ServerProcess, auth::auth_routes}; // 0.2.4, features = ["full"]
+use crate::{server_process::ServerProcess, auth::{auth_routes, auth_state}}; // 0.2.4, features = ["full"]
 
 #[rocket::main]
 async fn main() -> anyhow::Result<()>{
@@ -70,6 +70,7 @@ async fn main() -> anyhow::Result<()>{
     .allow_credentials(true);
 
     let _ = rocket::build()
+    .attach(auth_state::stage())
     .attach(minecraft_routes::stage(server_process.clone()))
     .attach(minecraft_routes::shutdown_hook(server_process))
     .attach(auth_routes::stage(config.clone()))
