@@ -31,12 +31,27 @@ export default {
       });
     },
   },
-  mounted() {
+  async mounted() {
+    const apiUrl = useApiUrl()
+
+    let http_response = await fetch(`${apiUrl.value}/auth/request_console`, {    
+        method: 'GET',
+        cache: 'no-cache',
+        credentials: 'include',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+    })
+    let json = await http_response.json();
+
+    console.log(json)
+
     let socket = new WebSocket("ws://127.0.0.1:3001")
 
     let pushData = this.pushData;
 
     socket.addEventListener('open', function (event) {
+      socket.send(json.hash)
       pushData("Connected!")
     });
 

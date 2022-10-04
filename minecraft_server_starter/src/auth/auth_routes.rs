@@ -1,17 +1,14 @@
-use std::thread::Thread;
-use std::time::{Duration, SystemTime};
+use std::sync::Arc;
 
 use argon2::{Argon2, Params, PasswordHash, PasswordVerifier};
-use rand::Rng;
+use rand::distributions::{Alphanumeric, DistString};
 use rocket::State;
 use rocket::http::{CookieJar, Cookie, SameSite, Status};
-use rocket::response::status::{self, BadRequest};
 use rocket::{fairing::AdHoc};
 use rocket::serde::{Deserialize, json::Json, json::json};
 use tokio::sync::RwLock;
-use tokio::time::Sleep;
 
-use crate::auth::auth_state::{AuthState, self};
+use crate::auth::auth_state::AuthState;
 use crate::config::{ServerConfig};
 
 use super::database::{self, Connection};
@@ -71,6 +68,24 @@ async fn authenticate_user(
             Err((Status::BadRequest, Some(json!({ "error": "Invalid credentials" }))))
         }
     }
+    //ws_auth_vec: Arc<RwLock<Vec<String>>>
+}
+
+#[get("/request_console")]
+async fn request_console(
+    ws_auth_vec: &State<Arc<RwLock<Vec<String>>>>,
+    auth_state: AuthState
+) ->  Result<rocket::serde::json::Value, (Status, Option<rocket::serde::json::Value>)> {
+
+    let hash = Alphanumeric.sample_string(&mut rand::thread_rng(), 32);
+    let hash = format!("{}_{}", auth_state.username, hash);
+
+    let mut vec = ws_auth_vec.write().await;
+    vec.push(hash.clone());
+    let id = vec.len() - 1;
+    drop(vec); //We still have not exited this fn - dropping this allows other thread to work with it!
+
+    Ok(json!({ "id": id, "hash": hash }))
 }
 
 pub fn stage(config: ServerConfig) -> AdHoc {
@@ -88,7 +103,7 @@ pub fn stage(config: ServerConfig) -> AdHoc {
             ).unwrap()
         );
 
-        rocket.mount("/auth", routes![authenticate_user])
+        rocket.mount("/auth", routes![authenticate_user, request_console])
             .manage(database::connect(config, &argon))
             .manage(argon)
     })
