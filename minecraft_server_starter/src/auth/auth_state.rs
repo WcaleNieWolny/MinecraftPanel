@@ -67,7 +67,6 @@ pub fn stage() -> AdHoc {
                 for val in write.iter_mut(){
                     let val = val.lock().await;
                     if val.creation_time.elapsed().unwrap() > val.expire_time {
-                        warn!("CLEAN: {} B : {}", val.username, val.creation_time.elapsed().unwrap() <= val.expire_time);
                         to_remove_vec.push(i);
                         i += 1;
                     }
