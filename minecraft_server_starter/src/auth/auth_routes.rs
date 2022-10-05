@@ -6,7 +6,7 @@ use rocket::State;
 use rocket::http::{CookieJar, Cookie, SameSite, Status};
 use rocket::{fairing::AdHoc};
 use rocket::serde::{Deserialize, json::Json, json::json};
-use tokio::sync::RwLock;
+use tokio::sync::{RwLock, Mutex};
 
 use crate::auth::auth_state::AuthState;
 use crate::config::{ServerConfig};
@@ -28,7 +28,7 @@ async fn authenticate_user(
     message: Json<LoginForm>, 
     argon: &State<Argon2<'_>>, 
     mut connection: Connection,
-    cache: &State<RwLock<Vec<AuthState>>>
+    cache: &State<Arc<RwLock<Vec<Mutex<AuthState>>>>>
 ) ->  Result<rocket::serde::json::Value, (Status, Option<rocket::serde::json::Value>)> {
 
     let password = &message.password;
@@ -55,6 +55,7 @@ async fn authenticate_user(
 
                 jar.add_private(
                     Cookie::build("user_id", auth_id.to_string())
+                        .expires(None)
                         .same_site(SameSite::None)
                         .finish()
                 );

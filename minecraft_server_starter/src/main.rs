@@ -153,13 +153,12 @@ async fn handle_websocket_connection(
                                 return Err(());
                             }
 
-                            let auth_vec = ws_auth_vec.read().await;
+                            let mut auth_vec = ws_auth_vec.write().await;
 
                             //Note: It is not the best solutin but it should work
-                            if auth_vec.iter().any(|v| v == msg){
-                                drop(auth_vec);
-                                let mut auth_vec = ws_auth_vec.write().await;
-                                auth_vec.retain(|v| v != msg);
+                            let pos = auth_vec.iter().position(|v| v == msg);
+                            if pos.is_some(){
+                                auth_vec.remove(pos.unwrap()s);
                                 return Ok(())
                             }else {
                                 return Err(())
