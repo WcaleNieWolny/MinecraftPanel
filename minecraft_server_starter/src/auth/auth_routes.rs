@@ -28,7 +28,7 @@ async fn authenticate_user(
     message: Json<LoginForm>, 
     argon: &State<Argon2<'_>>, 
     mut connection: Connection,
-    cache: &State<Arc<RwLock<Vec<Mutex<AuthState>>>>>
+    cache: &State<Arc<RwLock<Vec<AuthState>>>>
 ) ->  Result<rocket::serde::json::Value, (Status, Option<rocket::serde::json::Value>)> {
 
     let password = &message.password;
@@ -74,19 +74,9 @@ async fn authenticate_user(
 
 #[get("/request_console")]
 async fn request_console(
-    ws_auth_vec: &State<Arc<RwLock<Vec<String>>>>,
     auth_state: AuthState
 ) ->  Result<rocket::serde::json::Value, (Status, Option<rocket::serde::json::Value>)> {
-
-    let hash = Alphanumeric.sample_string(&mut rand::thread_rng(), 32);
-    let hash = format!("{}_{}", auth_state.username, hash);
-
-    let mut vec = ws_auth_vec.write().await;
-    vec.push(hash.clone());
-    let id = vec.len() - 1;
-    drop(vec); //We still have not exited this fn - dropping this allows other thread to work with it!
-
-    Ok(json!({ "id": id, "hash": hash }))
+    Ok(json!({ "hash": auth_state.web_socket_auth_token }))
 }
 
 pub fn stage(config: ServerConfig) -> AdHoc {

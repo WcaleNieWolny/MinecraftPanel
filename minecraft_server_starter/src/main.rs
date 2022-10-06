@@ -13,7 +13,7 @@ use tokio::{sync::{Mutex, watch::Receiver, RwLock}, fs::File, io::{AsyncWriteExt
 use futures_util::{StreamExt, SinkExt};
 use tokio_tungstenite::{tungstenite::{Error, Message}};
 
-use crate::{server_process::ServerProcess, auth::{auth_routes, auth_state}}; // 0.2.4, features = ["full"]
+use crate::{server_process::ServerProcess, auth::{auth_routes, auth_state::{self, AuthState}}}; // 0.2.4, features = ["full"]
 
 #[rocket::main]
 async fn main() -> anyhow::Result<()>{
@@ -57,9 +57,9 @@ async fn main() -> anyhow::Result<()>{
         }
     });
 
-    let ws_auth_vec: Arc<RwLock<Vec<String>>> = Arc::new(RwLock::new(Vec::new()));
+    let auth_vec = Arc::new(RwLock::new(Vec::<AuthState>::new()));
 
-    setup_websocket("127.0.0.1:3001", stdout_rx, ws_auth_vec.clone()).await?;
+    setup_websocket("127.0.0.1:3001", stdout_rx, auth_vec.clone()).await?;
 
     let cors = CorsOptions::default()
     .allowed_origins(AllowedOrigins::all())
@@ -72,29 +72,28 @@ async fn main() -> anyhow::Result<()>{
     .allow_credentials(true);
 
     let _ = rocket::build()
-    .attach(auth_state::stage())
+    .attach(auth_state::stage(auth_vec))
     .attach(minecraft_routes::stage(server_process.clone()))
     .attach(minecraft_routes::shutdown_hook(server_process))
     .attach(auth_routes::stage(config.clone()))
     .attach(cors.to_cors().unwrap())
     .manage(cors.to_cors().unwrap())
-    .manage(ws_auth_vec.clone())
     .mount("/", rocket_cors::catch_all_options_routes())
     .launch().await;
 
     Ok(())
 }
 
-async fn setup_websocket(addr: &str, stdout_rx: Receiver<String>, ws_auth_vec: Arc<RwLock<Vec<String>>>) -> anyhow::Result<()>{
+async fn setup_websocket(addr: &str, stdout_rx: Receiver<String>, auth_vec: Arc<RwLock<Vec<AuthState>>>) -> anyhow::Result<()>{
     let listener = TcpListener::bind(addr).await?;
 
     tokio::spawn(async move {
         while let Ok((stream, _)) = listener.accept().await {
             let peer = stream.peer_addr().expect("connected streams should have a peer address");
             let stdout_rx_clone = stdout_rx.clone();
-            let ws_auth_vec_clone = ws_auth_vec.clone();
+            let auth_vec_clone = auth_vec.clone();
             tokio::spawn(async move {
-                accept_websocket_connection(peer, stream, stdout_rx_clone, ws_auth_vec_clone).await;
+                accept_websocket_connection(peer, stream, stdout_rx_clone, auth_vec_clone).await;
             });
         };
     });
@@ -107,9 +106,9 @@ async fn accept_websocket_connection(
     peer: std::net::SocketAddr, 
     stream: TcpStream, 
     stdout_rx: Receiver<String>,
-    ws_auth_vec: Arc<RwLock<Vec<String>>>
+    auth_vec: Arc<RwLock<Vec<AuthState>>>
 ) {
-    if let Err(e) = handle_websocket_connection(peer, stream, stdout_rx, ws_auth_vec).await {
+    if let Err(e) = handle_websocket_connection(peer, stream, stdout_rx, auth_vec).await {
         match e {
             Error::ConnectionClosed | Error::Protocol(_) | Error::Utf8 => (),
             err => error!("Error processing connection: {}", err),
@@ -121,7 +120,7 @@ async fn handle_websocket_connection(
     _peer: std::net::SocketAddr, 
     stream: TcpStream, 
     stdout_rx: Receiver<String>,
-    ws_auth_vec: Arc<RwLock<Vec<String>>>
+    auth_vec: Arc<RwLock<Vec<AuthState>>>
 ) -> Result<(), Error> {
     let addr = stream.peer_addr().expect("connected streams should have a peer address");
     info!("Peer address: {}", addr);
@@ -153,16 +152,15 @@ async fn handle_websocket_connection(
                                 return Err(());
                             }
 
-                            let mut auth_vec = ws_auth_vec.write().await;
+                            let auth_vec = auth_vec.read().await;
 
-                            //Note: It is not the best solutin but it should work
-                            let pos = auth_vec.iter().position(|v| v == msg);
-                            if pos.is_some(){
-                                auth_vec.remove(pos.unwrap()s);
-                                return Ok(())
-                            }else {
-                                return Err(())
+                            for auth_user in auth_vec.iter(){
+                                if auth_user.web_socket_auth_token.eq(msg) {
+                                    return Ok(())
+                                }
                             }
+
+                            return Err(())
 
                         },
                         Err(_) => return Err(())
