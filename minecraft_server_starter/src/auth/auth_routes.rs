@@ -1,12 +1,11 @@
 use std::sync::Arc;
 
 use argon2::{Argon2, Params, PasswordHash, PasswordVerifier};
-use rand::distributions::{Alphanumeric, DistString};
 use rocket::State;
 use rocket::http::{CookieJar, Cookie, SameSite, Status};
 use rocket::{fairing::AdHoc};
 use rocket::serde::{Deserialize, json::Json, json::json};
-use tokio::sync::{RwLock, Mutex};
+use tokio::sync::{RwLock};
 
 use crate::auth::auth_state::AuthState;
 use crate::config::{ServerConfig};
