@@ -1,4 +1,4 @@
-use std::{time::{SystemTime, Duration}, sync::Arc, ops::AddAssign};
+use std::{time::{SystemTime, Duration}, sync::Arc, ops::{AddAssign, Deref}, collections::HashMap};
 use rand::distributions::{Alphanumeric, DistString};
 use rocket::{http::{Status}, fairing::AdHoc};
 use rocket::request::{self, FromRequest};
@@ -29,12 +29,13 @@ struct AuthStateTime{
     expire_time: Duration,
 }
 
+pub struct AuthIndex(pub String);
+
 impl AuthState{
 
     pub fn new(db_user: User) -> anyhow::Result<Self>{
 
         let hash = Alphanumeric.sample_string(&mut rand::thread_rng(), 32);
-        let hash = format!("{}_{}", db_user.username, hash);
 
         Ok(
             Self {
@@ -55,14 +56,23 @@ impl AuthState{
         )
     }
 
-    pub async fn put_in_cache(self, cache: &State<Arc<RwLock<Vec<AuthState>>>>) -> usize{
+    pub async fn put_in_cache(self, cache: &State<Arc<RwLock<HashMap<String, AuthState>>>>) -> String{
         let mut lock = cache.write().await;
-        lock.push(self);
-        return lock.len() - 1;
+        let id = format!("{}_{}", self.username.clone(), Alphanumeric.sample_string(&mut rand::thread_rng(), 16));
+        lock.insert(id.clone(), self);
+        return id;
     }
 }
 
-pub fn stage(auth_vec: Arc<RwLock<Vec<AuthState>>>) -> AdHoc {
+impl Deref for AuthIndex {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+pub fn stage(auth_vec: Arc<RwLock<HashMap<String, AuthState>>>) -> AdHoc {
 
     AdHoc::on_ignite("Auth StateStage", |rocket| async {
 
@@ -75,20 +85,17 @@ pub fn stage(auth_vec: Arc<RwLock<Vec<AuthState>>>) -> AdHoc {
                 interval.tick().await;
 
                 let mut write = auth_vec_clone.write().await;
+                let mut to_remove_vec: Vec<String> = Vec::new();
 
-                let mut i = 0;
-                let mut to_remove_vec: Vec<usize> = Vec::new();
-
-                for val in write.iter_mut(){
+                for (index, val) in write.iter_mut(){
                     let time = val.time.lock().await;
                     if time.creation_time.elapsed().unwrap() > time.expire_time {
-                        to_remove_vec.push(i);
-                        i += 1;
+                        to_remove_vec.push(index.clone());
                     }
                 }
 
                 to_remove_vec.drain(0..).for_each(|i| {
-                    write.remove(i);
+                    write.remove(&i);
                 });
             }
         });
@@ -100,20 +107,17 @@ pub fn stage(auth_vec: Arc<RwLock<Vec<AuthState>>>) -> AdHoc {
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for AuthState {
     type Error = ();
-    async fn from_request(req: &'r Request<'_>) ->   request::Outcome<AuthState, Self::Error> {
+    async fn from_request(req: &'r Request<'_>) -> request::Outcome<AuthState, Self::Error> {
         let user_id = req.cookies().get_private("user_id");
 
         match user_id {
             Some(user_id) => {
-                let cache_vec: &State<Arc<RwLock<Vec<AuthState>>>> = try_outcome!(req.guard::<&State<Arc<RwLock<Vec<AuthState>>>>>().await);
-                let user_id = match user_id.value().parse::<usize>() {
-                    Ok(val) => val,
-                    Err(_) => return Outcome::Failure((Status::InternalServerError, ())),
-                };
+                let cache_vec: &State<Arc<RwLock<HashMap<String, AuthState>>>> = try_outcome!(req.guard::<&State<Arc<RwLock<HashMap<String, AuthState>>>>>().await);
+                let user_id = user_id.value().to_owned();
 
                 let cache_vec = cache_vec.read().await;
 
-                return match cache_vec.get(user_id) {
+                return match cache_vec.get(&user_id) {
                     Some(val) => {
                         val.time.lock().await.expire_time.add_assign(Duration::from_secs(3 * 60));
 
@@ -121,6 +125,23 @@ impl<'r> FromRequest<'r> for AuthState {
                     },
                     None => Outcome::Failure((Status::Unauthorized, ())),
                 };
+            },
+            None => {
+                Outcome::Failure((Status::Unauthorized, ()))
+            }
+        }
+    }
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for AuthIndex {
+    type Error = ();
+    async fn from_request(req: &'r Request<'_>) -> request::Outcome<AuthIndex, Self::Error> {
+        let user_id = req.cookies().get_private("user_id");
+
+        return match user_id {
+            Some(user_id) => {
+                Outcome::Success(AuthIndex(user_id.value().to_owned()))
             },
             None => {
                 Outcome::Failure((Status::Unauthorized, ()))

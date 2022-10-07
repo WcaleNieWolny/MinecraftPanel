@@ -7,7 +7,7 @@ use diesel::mysql::MysqlConnection;
 use super::schema::users;
 
 #[derive(AsChangeset, Serialize, Deserialize, Queryable, Insertable, Debug)]
-#[table_name = "users"]
+#[diesel(table_name = users)]
 pub struct User {
     pub id: Option<i32>,
     pub username: String,

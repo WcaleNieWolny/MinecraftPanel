@@ -5,7 +5,7 @@ mod config;
 mod minecraft_routes;
 mod auth;
 
-use std::{process::Stdio, env, path::PathBuf, io::{BufRead}, sync::Arc, thread};
+use std::{process::Stdio, env, path::PathBuf, io::{BufRead}, sync::Arc, thread, collections::HashMap};
 use config::ServerConfig;
 use rocket::{http::Method, log::private::warn};
 use rocket_cors::{AllowedOrigins, CorsOptions};
@@ -57,7 +57,7 @@ async fn main() -> anyhow::Result<()>{
         }
     });
 
-    let auth_vec = Arc::new(RwLock::new(Vec::<AuthState>::new()));
+    let auth_vec = Arc::new(RwLock::new(HashMap::<String, AuthState>::new()));
 
     setup_websocket("127.0.0.1:3001", stdout_rx, auth_vec.clone()).await?;
 
@@ -84,16 +84,16 @@ async fn main() -> anyhow::Result<()>{
     Ok(())
 }
 
-async fn setup_websocket(addr: &str, stdout_rx: Receiver<String>, auth_vec: Arc<RwLock<Vec<AuthState>>>) -> anyhow::Result<()>{
+async fn setup_websocket(addr: &str, stdout_rx: Receiver<String>, auth_map: Arc<RwLock<HashMap<String, AuthState>>>) -> anyhow::Result<()>{
     let listener = TcpListener::bind(addr).await?;
 
     tokio::spawn(async move {
         while let Ok((stream, _)) = listener.accept().await {
             let peer = stream.peer_addr().expect("connected streams should have a peer address");
             let stdout_rx_clone = stdout_rx.clone();
-            let auth_vec_clone = auth_vec.clone();
+            let auth_map_clone = auth_map.clone();
             tokio::spawn(async move {
-                accept_websocket_connection(peer, stream, stdout_rx_clone, auth_vec_clone).await;
+                accept_websocket_connection(peer, stream, stdout_rx_clone, auth_map_clone).await;
             });
         };
     });
@@ -106,9 +106,9 @@ async fn accept_websocket_connection(
     peer: std::net::SocketAddr, 
     stream: TcpStream, 
     stdout_rx: Receiver<String>,
-    auth_vec: Arc<RwLock<Vec<AuthState>>>
+    auth_map: Arc<RwLock<HashMap<String, AuthState>>>
 ) {
-    if let Err(e) = handle_websocket_connection(peer, stream, stdout_rx, auth_vec).await {
+    if let Err(e) = handle_websocket_connection(peer, stream, stdout_rx, auth_map).await {
         match e {
             Error::ConnectionClosed | Error::Protocol(_) | Error::Utf8 => (),
             err => error!("Error processing connection: {}", err),
@@ -120,7 +120,7 @@ async fn handle_websocket_connection(
     _peer: std::net::SocketAddr, 
     stream: TcpStream, 
     stdout_rx: Receiver<String>,
-    auth_vec: Arc<RwLock<Vec<AuthState>>>
+    auth_map: Arc<RwLock<HashMap<String, AuthState>>>
 ) -> Result<(), Error> {
     let addr = stream.peer_addr().expect("connected streams should have a peer address");
     info!("Peer address: {}", addr);
@@ -147,17 +147,19 @@ async fn handle_websocket_connection(
         
                             let msg = msg.to_text().unwrap();
 
-                            let split: Vec<&str> = msg.split("_").collect();
+                            let split: Vec<&str> = msg.split("-").collect();
                             if split.len() != 2 {
                                 return Err(());
                             }
 
-                            let auth_vec = auth_vec.read().await;
+                            let auth_map = auth_map.read().await;
+                            let auth_user = match auth_map.get(split[0]){
+                                Some(val) => val,
+                                None => return Err(()),
+                            };
 
-                            for auth_user in auth_vec.iter(){
-                                if auth_user.web_socket_auth_token.eq(msg) {
-                                    return Ok(())
-                                }
+                            if auth_user.web_socket_auth_token.eq(split[1]) {
+                                return Ok(())
                             }
 
                             return Err(())

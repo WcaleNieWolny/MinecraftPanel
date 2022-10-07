@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use argon2::{Argon2, Params, PasswordHash, PasswordVerifier};
@@ -7,7 +8,7 @@ use rocket::{fairing::AdHoc};
 use rocket::serde::{Deserialize, json::Json, json::json};
 use tokio::sync::{RwLock};
 
-use crate::auth::auth_state::AuthState;
+use crate::auth::auth_state::{AuthState, AuthIndex};
 use crate::config::{ServerConfig};
 
 use super::database::{self, Connection};
@@ -27,7 +28,7 @@ async fn authenticate_user(
     message: Json<LoginForm>, 
     argon: &State<Argon2<'_>>, 
     mut connection: Connection,
-    cache: &State<Arc<RwLock<Vec<AuthState>>>>
+    cache: &State<Arc<RwLock<HashMap<String, AuthState>>>>
 ) ->  Result<rocket::serde::json::Value, (Status, Option<rocket::serde::json::Value>)> {
 
     let password = &message.password;
@@ -53,7 +54,7 @@ async fn authenticate_user(
                 let auth_id = auth_state.put_in_cache(cache).await;
 
                 jar.add_private(
-                    Cookie::build("user_id", auth_id.to_string())
+                    Cookie::build("user_id", auth_id)
                         .expires(None)
                         .same_site(SameSite::None)
                         .finish()
@@ -73,9 +74,10 @@ async fn authenticate_user(
 
 #[get("/request_console")]
 async fn request_console(
-    auth_state: AuthState
+    auth_state: AuthState,
+    auth_index: AuthIndex
 ) ->  Result<rocket::serde::json::Value, (Status, Option<rocket::serde::json::Value>)> {
-    Ok(json!({ "hash": auth_state.web_socket_auth_token }))
+    Ok(json!({ "hash": format!("{}-{}", *auth_index, auth_state.web_socket_auth_token) }))
 }
 
 pub fn stage(config: ServerConfig) -> AdHoc {
