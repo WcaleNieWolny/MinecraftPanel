@@ -1,5 +1,5 @@
 <template>
-    <div class="flex h-[5hv] max-w-[95%] mt-1 ml-auto mr-auto mb-auto items-center border-2 border-cyan-700 border-solid rounded-lg bg-zinc-800" @keydown="onKeydown">
+    <div class="shadow-lg flex h-[5hv] max-w-[95%] mt-4 ml-auto mr-auto mb-auto items-center rounded-lg bg-zinc-800" @keydown="onKeydown">
         <input class="ml-1 outline-none float-left w-[100%] h-9 bg-zinc-800 placeholder-zinc-500 text-zinc-300" v-model="formdata.input" placeholder="minecraft command"/>
         <div class="hover:bg-green-700 hover:shadow-xl border-none float-right h-[5hv] pt-0 pl-1">
             <button @click="onClick()"><svg class="relative top-1 bottom-1 right-1" height="34px" width="34px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m23.968 0-23.968 10.286h13.68v13.714z"/></svg></button>
@@ -107,16 +107,3 @@
         }
     }
 </script>
-
-<style scoped>
-    .main {
-        @apply flex h-[5hv] max-w-[95%] mt-1 ml-auto mr-auto mb-auto items-center border-solid border-2 border-zinc-800 bg-zinc-400
-    }
-
-    .input {
-        @apply ml-1 outline-none float-left w-[93%] h-9 bg-zinc-400 placeholder-zinc-500
-    }
-    .button {
-        @apply border-none float-right ml-auto mr-2 max-w-[7%] h-[3vh]
-    }
-</style>

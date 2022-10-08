@@ -1,11 +1,9 @@
 <template>
-    <header>
-        <div>
-            <h1 class="text-center">Console Window</h1>
-            <Textfield ref="textfield"/>
-            <Input @console-data-send="handleConsoleDataSend" text="Send"/>
-        </div>
-    </header>
+    <div class="bg-zinc-700 h-full">
+        <h1 class="text-center">Console Window</h1>
+        <Textfield ref="textfield"/>
+        <Input @console-data-send="handleConsoleDataSend" text="Send"/>
+    </div>
 </template>
 
 
@@ -20,6 +18,7 @@ export default {
     },
     methods: {
         handleConsoleDataSend(data){
+            console.log(this.$refs.textfield.pushData)
             this.$refs.textfield.pushData(`> ${data}`, false)
         }
     }
