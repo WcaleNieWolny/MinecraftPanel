@@ -1,6 +1,5 @@
 <template>
-    <div class="bg-zinc-700 h-full">
-        <h1 class="text-center">Console Window</h1>
+    <div class="bg-zinc-700 h-full flex flex-col">
         <Textfield ref="textfield"/>
         <Input @console-data-send="handleConsoleDataSend" text="Send"/>
     </div>

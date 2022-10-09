@@ -1,16 +1,17 @@
 <template>
-  <div id="app" class="">
-    <div>
-      <div class="w-[95%] max-h-[87.5vh] min-h-[87.5vh] rounded-lg shadow-xxl leading-none text-lg m-auto  mb-auto overflow-x-scroll overflow-y-scroll bg-zinc-800" ref="list">
-        <p  v-for="item in items" :key="item.id">
-          <span v-html="item.html" class="text-zinc-300"></span>
-        </p>
-      </div>
-    </div>
+  <div class="shadow-xxl overflow-x-scroll overflow-y-scroll m-auto mt-[2vh] bg-zinc-800 rounded-xl p-2 w-[92%] min-w-[92%] h-[88vh] min-h-[88vh]">
+    <p  v-for="item in items" :key="item.id">
+      <span v-html="item.html" class="text-zinc-300"></span>
+    </p>
   </div>
 </template>
 
 <script setup lang="ts">
+  import { getData } from './data'
+  const items =  ref(getData(100))
+</script>
+
+<!-- <script setup lang="ts">
   import { getData } from './data'
   import Convert from 'ansi-to-html'
   import Input from './Input.vue'
@@ -66,4 +67,4 @@
   defineExpose(
     {pushData: pushData}
 );
-</script>
+</script> -->
