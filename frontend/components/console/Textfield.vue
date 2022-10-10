@@ -1,5 +1,5 @@
 <template>
-  <div class="shadow-xxl overflow-x-scroll overflow-y-scroll m-auto mt-[2vh] bg-zinc-800 rounded-xl p-2 w-[92%] min-w-[92%] h-[88vh] min-h-[88vh]">
+  <div class="shadow-xxl overflow-x-scroll overflow-y-scroll m-auto mt-[2vh] bg-zinc-800 rounded-xl p-2 w-[92%] min-w-[92%] h-[88vh] min-h-[88vh]" ref="list">
     <p  v-for="item in items" :key="item.id">
       <span v-html="item.html" class="text-zinc-300"></span>
     </p>
@@ -8,13 +8,7 @@
 
 <script setup lang="ts">
   import { getData } from './data'
-  const items =  ref(getData(100))
-</script>
-
-<!-- <script setup lang="ts">
-  import { getData } from './data'
   import Convert from 'ansi-to-html'
-  import Input from './Input.vue'
 
   const items =  ref(getData(1))
   const converter = new Convert()
@@ -59,12 +53,12 @@
     console.log(`the component is now mounted.`)
   })
 
-  const updated = () => {
+  onUpdated(() => {
     var container: any = list;
     container.scrollTop = container.scrollHeight;
-  }
+  })
 
   defineExpose(
     {pushData: pushData}
 );
-</script> -->
+</script>

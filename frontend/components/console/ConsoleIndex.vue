@@ -18,7 +18,6 @@ export default {
     },
     methods: {
         handleConsoleDataSend(data){
-            console.log(this.$refs.textfield.pushData)
             this.$refs.textfield.pushData(`> ${data}`, false)
         }
     }
