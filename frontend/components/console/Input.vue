@@ -1,8 +1,8 @@
 <template>
-    <div class="m-auto w-[92%] min-w-[92%] h-[3vh] min-h-[3vh] bg-zinc-800">
-        <input class="outline-none float-left w-[calc(100%-42px)] h-full bg-zinc-800 placeholder-zinc-500 text-zinc-300" placeholder="minecraft command"/>
-        <div class="hover:bg-green-700 hover:shadow-xl border-none float-right h-[3vh] min-h-[3vh]">
-            <button class="w-[38px] text-center mr-1 mt-[-0.03rem]"><svg class="m-auto" height="3vh" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m23.968 0-23.968 10.286h13.68v13.714z"/></svg></button>
+    <div class="rounded-xl m-auto w-[92%] min-w-[92%] h-[3vh] min-h-[3vh] bg-zinc-800 shadow-sm">
+        <input class="outline-none rounded-bl-xl rounded-tl-xl float-left w-[calc(100%-42px)] h-full bg-zinc-800 placeholder-zinc-500 text-zinc-300" placeholder="minecraft command"/>
+        <div class="hover:bg-green-700 hover:shadow-xl transition transform rounded-br-xl rounded-tr-xl float-right h-[3vh] min-h-[3vh]">
+            <button class="w-[38px] text-center h-full"><svg class="m-auto pr-2" height="calc(3vh * 0.85)" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m23.968 0-23.968 10.286h13.68v13.714z"/></svg></button>
         </div>
     </div>
 </template>
