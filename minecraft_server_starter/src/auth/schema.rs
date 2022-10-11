@@ -8,3 +8,10 @@ diesel::table! {
         user_type -> Smallint,
     }
 }
+
+// CREATE TABLE USERS(
+//     ID INT PRIMARY KEY      NOT NULL,
+//     USERNAME      TEXT      NOT NULL,
+//     PASSWORD      TEXT      NOT NULL,
+//     USER_TYPE     SMALLINT  NOT NULL
+// )

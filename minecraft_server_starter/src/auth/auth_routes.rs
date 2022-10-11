@@ -21,7 +21,7 @@ struct LoginForm {
 }
 //POST /auth/authenticate_user application/json
 //POST /api/auth/authenticate_user application/json
-//Admin pwd: jz6u8s0ea24HcMK
+//Admin pwd: rObxDnsF5gL0pUM
 #[post("/authenticate_user", format="json", data = "<message>")]
 async fn authenticate_user(
     jar: &CookieJar<'_>, 

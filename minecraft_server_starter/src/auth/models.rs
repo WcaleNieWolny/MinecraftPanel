@@ -2,7 +2,7 @@ use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use diesel::prelude::*;
 use rand::rngs::OsRng;
 use serde::{Serialize, Deserialize};
-use diesel::mysql::MysqlConnection;
+use diesel::sqlite::SqliteConnection;
 
 use super::schema::users;
 
@@ -16,15 +16,15 @@ pub struct User {
 }
 
 impl User {
-    pub fn read_all(connection: &mut MysqlConnection) -> Vec<User> {
+    pub fn read_all(connection: &mut SqliteConnection) -> Vec<User> {
         users::table.load::<User>(connection).unwrap()
     }
 
-    pub fn read_by_username(username: &str, connection: &mut MysqlConnection) -> QueryResult<User> {
+    pub fn read_by_username(username: &str, connection: &mut SqliteConnection) -> QueryResult<User> {
         users::table.filter(users::username.eq(username)).first(connection)
     }
 
-    pub fn create(self, argon2: &Argon2, connection: &mut MysqlConnection) -> anyhow::Result<()>{
+    pub fn create(self, argon2: &Argon2, connection: &mut SqliteConnection) -> anyhow::Result<()>{
         //We need to hash the password
         let pwd = &self.password;
         let salt = SaltString::generate(&mut OsRng);

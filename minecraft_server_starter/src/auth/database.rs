@@ -5,18 +5,18 @@ use rand::distributions::{Alphanumeric, DistString};
 use rocket::http::Status;
 use rocket::request::{self, FromRequest};
 use rocket::{Request, State};
-use diesel::mysql::MysqlConnection;
+use diesel::sqlite::SqliteConnection;
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use rocket::outcome::{Outcome};
 
 use crate::config::ServerConfig;
 
 // An alias to the type for a pool of Diesel Mysql Connection
-pub type MysqlPool = Pool<ConnectionManager<MysqlConnection>>;
+pub type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;
 
 /// Initialize the database pool.
-pub fn connect(config: ServerConfig, argon2: &Argon2) -> MysqlPool {
-    let manager = ConnectionManager::<MysqlConnection>::new(config.mysql_string);
+pub fn connect(config: ServerConfig, argon2: &Argon2) -> SqlitePool {
+    let manager = ConnectionManager::<SqliteConnection>::new(config.mysql_string);
     let pool = Pool::new(manager).expect("Failed to create pool");
 
     let mut connection = Connection(pool.try_get().unwrap());
@@ -46,7 +46,7 @@ pub fn connect(config: ServerConfig, argon2: &Argon2) -> MysqlPool {
 }
 
 // Connection request guard type: a wrapper around an r2d2 pooled connection.
-pub struct Connection(pub PooledConnection<ConnectionManager<MysqlConnection>>);
+pub struct Connection(pub PooledConnection<ConnectionManager<SqliteConnection>>);
 
 /// Attempts to retrieve a single connection from the managed database pool. If
 /// no pool is currently managed, fails with an `InternalServerError` status. If
@@ -55,7 +55,7 @@ pub struct Connection(pub PooledConnection<ConnectionManager<MysqlConnection>>);
 impl<'r> FromRequest<'r> for Connection {
     type Error = ();
     async fn from_request(req: &'r Request<'_>) ->   request::Outcome<Connection, Self::Error> {
-        let pool = req.guard::<&State<Pool<ConnectionManager<MysqlConnection>>>>().await;
+        let pool = req.guard::<&State<Pool<ConnectionManager<SqliteConnection>>>>().await;
         match pool {
             Outcome::Success(conn) => Outcome::Success(Connection(conn.inner().try_get().unwrap())),
             Outcome::Failure(_) => Outcome::Failure((Status::ServiceUnavailable, ())),
@@ -66,7 +66,7 @@ impl<'r> FromRequest<'r> for Connection {
 
 // For the convenience of using an &Connection as an &MysqlConnection.
 impl Deref for Connection {
-    type Target = MysqlConnection;
+    type Target = SqliteConnection;
 
     fn deref(&self) -> &Self::Target {
         &self.0
