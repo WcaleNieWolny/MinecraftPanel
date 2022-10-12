@@ -6,10 +6,10 @@ mod minecraft_routes;
 mod auth;
 
 use std::{process::Stdio, env, path::PathBuf, io::{BufRead}, sync::Arc, thread, collections::HashMap};
-use config::ServerConfig;
+use crate::config::ServerConfig;
 use rocket::{http::Method, log::private::warn};
 use rocket_cors::{AllowedOrigins, CorsOptions};
-use tokio::{sync::{Mutex, watch::Receiver, RwLock}, fs::File, io::{AsyncWriteExt, AsyncReadExt}, process::Command, net::{TcpListener, TcpStream}};
+use tokio::{sync::{Mutex, watch::Receiver, RwLock}, io::AsyncReadExt, process::Command, net::{TcpListener, TcpStream}};
 use futures_util::{StreamExt, SinkExt};
 use tokio_tungstenite::{tungstenite::{Error, Message}};
 
@@ -18,7 +18,7 @@ use crate::{server_process::ServerProcess, auth::{auth_routes, auth_state::{self
 #[rocket::main]
 async fn main() -> anyhow::Result<()>{
 
-    let config = get_config().await?;
+    let config = ServerConfig::new()?;
 
     let server_jar_path = prepere_server_jar(&config).await?;
 
@@ -206,31 +206,6 @@ async fn handle_websocket_connection(
     }
 
     Ok(())
-}
-
-async fn get_config() -> anyhow::Result<ServerConfig>{
-    let mut path = env::current_dir().unwrap();
-    path.push("config.toml");
-
-    let mut config_file = File::open(path.clone()).await?;
-
-    if config_file.metadata().await.unwrap().len() == 0 {
-        let config = ServerConfig::default();
-
-        let mut config_file = File::create(path).await?;
-        config_file.write(toml::to_string(&config).unwrap().as_bytes()).await?;
-
-        return Ok(config)
-    }
-
-    let mut config_contents = vec![];
-    config_file.read_to_end(&mut config_contents).await?;
-    let config_contents = String::from_utf8(config_contents)?;
-    let leaked: &'static str = Box::leak(config_contents.to_string().into_boxed_str());
-
-    let config: ServerConfig = toml::from_str(&leaked)?;
-
-    Ok(config)
 }
 
 async fn prepere_server_jar(servrer_config: &ServerConfig) -> anyhow::Result<PathBuf>{
