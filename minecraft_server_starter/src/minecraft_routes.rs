@@ -1,26 +1,28 @@
 use std::sync::Arc;
 
+use rocket::Shutdown;
 use rocket::response::stream::{EventStream, Event};
 use rocket::{State, fairing::AdHoc};
 use rocket::serde::json::Json;
 use serde::{Serialize, Deserialize};
 use serde_json::{json};
-use tokio::sync::Mutex;
 use tokio::sync::watch::Receiver;
 use tokio_stream::StreamExt;
+use rocket::tokio::select;
+
 
 use crate::auth::auth_state::AuthState;
-use crate::server_process::{ServerProcess};
+use crate::server_process::ServerProcess;
 
 #[get("/last_std")]
-async fn last_std(process: &State<Arc<Mutex<ServerProcess>>>, _auth_state: AuthState) ->  rocket::serde::json::Value{
-    let last_std = process.lock().await.last_stdout();
+async fn last_std(process: &State<Arc<ServerProcess>>, _auth_state: AuthState) ->  rocket::serde::json::Value{
+    let last_std = process.last_stdout();
     json!({ "last_std": last_std })
 }
 
 #[get("/list_players")]
-async fn list_players(process: &State<Arc<Mutex<ServerProcess>>>, _auth_state: AuthState) ->  rocket::serde::json::Value{
-    let list_players = process.lock().await.list_players().await;
+async fn list_players(process: &State<Arc<ServerProcess>>, _auth_state: AuthState) ->  rocket::serde::json::Value{
+    let list_players = process.list_players().await;
     let size = list_players.len();
     json!({ "list_players": list_players, "size": size })
 }
@@ -34,21 +36,30 @@ struct CommandPost {
 #[get("/console")]
 async fn console(
     stdout_rx: &State<Receiver<String>>,
+    mut shutdown: Shutdown,
     _auth_state: AuthState
 ) -> EventStream![] {
-
     let stdout_rx = stdout_rx.inner().clone();
 
     EventStream! {
         let mut watch_stream = tokio_stream::wrappers::WatchStream::new(stdout_rx).map(|data| {
             Event::json(&data)
         });
+
         loop {
-            match watch_stream.next().await {
-                Some(it) => {
-                    yield it;
+            select! {
+                msg = watch_stream.next() => {
+                    match msg {
+                        Some(it) => {
+                            yield it;
+                        },
+                        None => break,
+                    };  
                 },
-                None => break,
+                _ = &mut shutdown => {
+                    yield Event::json(&"Server is shutting down!");
+                    break;
+                }
             };
         }
     }
@@ -57,7 +68,7 @@ async fn console(
 #[post("/execute_cmd", format = "json", data = "<message>")]
 async fn execute_cmd(
     message: Json<CommandPost>, 
-    process: &State<Arc<Mutex<ServerProcess>>>,
+    process: &State<Arc<ServerProcess>>,
     _auth_state: AuthState
 ) -> Option<()> {
     let mut cmd = message.command.clone();
@@ -71,23 +82,24 @@ async fn execute_cmd(
 
     println!("CMD: {}", cmd);
 
-    process.lock().await.write_to_stdin(cmd);
+    process.write_to_stdin(cmd);
 
     Some(())
 }
 
-pub fn stage(server_process: Arc<tokio::sync::Mutex<ServerProcess>>) -> AdHoc {
-    AdHoc::on_ignite("Server Process", |rocket| async move{
-        rocket.manage(server_process)
+pub fn stage() -> AdHoc {
+    AdHoc::on_ignite("Server Routes", |rocket| async move{
+
+        rocket
             .mount("/api", routes![last_std, execute_cmd, list_players, console])
     })
 }
 
-pub fn shutdown_hook(server_process: Arc<tokio::sync::Mutex<ServerProcess>>) -> AdHoc {
-    AdHoc::on_shutdown("shutdown hook!", |_| Box::pin(async move {
-        println!("WHOLE BACKEND IS SHUTING DOWN!!!");
-        let mut process = server_process.lock().await;
-        process.await_shutdown().await;
+pub fn shutdown_hook() -> AdHoc {
+    AdHoc::on_shutdown("shutdown hook!", |rocket| Box::pin(async move {
+        let server_process: &Arc<ServerProcess> = rocket.state().unwrap();
+        println!("WHOLE BACKEND IS SHUTING DOWN!!! {}", Arc::strong_count(server_process));
+        server_process.await_shutdown().await;
         println!("SHUTDOWN COMPLEATED")
     }))
 }

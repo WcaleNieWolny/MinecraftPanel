@@ -72,9 +72,9 @@ async fn authenticate_user(
     //ws_auth_vec: Arc<RwLock<Vec<String>>>
 }
 
-pub fn stage(config: ServerConfig) -> AdHoc {
-
+pub fn stage() -> AdHoc {
     AdHoc::on_ignite("Auth Stage", |rocket| async {
+        let config = rocket.state::<ServerConfig>().unwrap().clone();
 
         let argon = Argon2::new(
             argon2::Algorithm::Argon2id,
@@ -86,7 +86,7 @@ pub fn stage(config: ServerConfig) -> AdHoc {
                 None 
             ).unwrap()
         );
-
+        
         rocket.mount("/auth", routes![authenticate_user])
             .manage(database::connect(config, &argon))
             .manage(argon)

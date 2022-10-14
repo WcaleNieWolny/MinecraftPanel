@@ -38,7 +38,7 @@
   })
 
   onUpdated(() => {
-    var container: any = list;
+    var container: any = list.value;
     container.scrollTop = container.scrollHeight;
   })
 
