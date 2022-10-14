@@ -54,6 +54,7 @@ impl ServerProcess {
                                 stdin.flush().await.expect("Couldn't flush stdin");
                             },
                             None => {
+                                println!("FICK!");
                                 break;
                             },
                         };

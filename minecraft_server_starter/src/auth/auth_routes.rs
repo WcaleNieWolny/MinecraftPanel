@@ -72,6 +72,12 @@ async fn authenticate_user(
     //ws_auth_vec: Arc<RwLock<Vec<String>>>
 }
 
+#[get("/logout")]
+async fn logout(auth_state: AuthState) -> Status {
+    auth_state.logout().await;
+    Status::NoContent
+}
+
 pub fn stage() -> AdHoc {
     AdHoc::on_ignite("Auth Stage", |rocket| async {
         let config = rocket.state::<ServerConfig>().unwrap().clone();
@@ -87,7 +93,7 @@ pub fn stage() -> AdHoc {
             ).unwrap()
         );
         
-        rocket.mount("/auth", routes![authenticate_user])
+        rocket.mount("/auth", routes![authenticate_user, logout])
             .manage(database::connect(config, &argon))
             .manage(argon)
     })

@@ -70,6 +70,7 @@
             }
             errorText.value = "Invalid username or password!"
         }else{
+            auth.value = true
             navigateTo("console/")
         }
     }

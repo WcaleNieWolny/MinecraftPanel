@@ -1,5 +1,5 @@
 <template>
-  <div class="shadow-xxl overflow-x-scroll overflow-y-scroll m-auto mt-[2vh] bg-zinc-800 rounded-xl p-2 w-[92%] min-w-[92%] h-[88vh] min-h-[88vh]" ref="list">
+  <div class="shadow-xxl overflow-x-scroll overflow-y-scroll m-auto mt-[2vh] bg-zinc-800 rounded-xl p-2 w-[92%] min-w-[92%] h-[86vh] min-h-[86vh]" ref="list">
     <p  v-for="item in items" :key="item.id">
       <span v-html="item.html" class="text-zinc-300"></span>
     </p>

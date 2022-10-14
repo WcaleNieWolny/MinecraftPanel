@@ -69,7 +69,7 @@ pub fn stage(auth_vec: Arc<RwLock<HashMap<String, AuthState>>>) -> AdHoc {
         let auth_vec_clone = auth_vec.clone();
 
         tokio::spawn(async move {
-            let mut interval = tokio::time::interval(Duration::from_secs(10 * 60));
+            let mut interval = tokio::time::interval(Duration::from_secs(60));
 
             loop {
                 interval.tick().await;
@@ -94,6 +94,13 @@ pub fn stage(auth_vec: Arc<RwLock<HashMap<String, AuthState>>>) -> AdHoc {
     })
 }
 
+impl AuthState {
+    pub async fn logout(&self){
+        let mut time = self.time.lock().await;
+        time.expire_time = Duration::from_nanos(0)
+    }
+}
+
 #[rocket::async_trait]
 impl<'r> FromRequest<'r> for AuthState {
     type Error = ();
@@ -109,7 +116,11 @@ impl<'r> FromRequest<'r> for AuthState {
 
                 return match cache_vec.get(&user_id) {
                     Some(val) => {
-                        val.time.lock().await.expire_time.add_assign(Duration::from_secs(3 * 60));
+                        let mut time = val.time.lock().await;
+                        if time.creation_time.elapsed().unwrap() > time.expire_time {
+                            return Outcome::Failure((Status::Unauthorized, ()));
+                        }
+                        time.expire_time.add_assign(Duration::from_secs(3 * 60));
 
                         return Outcome::Success(val.clone())
                     },
