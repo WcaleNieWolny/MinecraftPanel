@@ -15,7 +15,6 @@
   const list = ref<HTMLDivElement>();
 
   const pushData = (string: string, parseAnsi = true) => {
-    console.log(string)
       items.value.push({
         id: String(items.value.length),
         text: string,
@@ -27,30 +26,15 @@
   onMounted(async () => {
     const apiUrl = useApiUrl()
 
-    let http_response = await fetch(`${apiUrl.value}/auth/request_console`, {    
-        method: 'GET',
-        cache: 'no-cache',
-        credentials: 'include',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-    })
-    let json = await http_response.json();
+    const events = new EventSource(`${apiUrl.value}/api/console`, { withCredentials: true });
 
-    console.log(json)
-
-    let socket = new WebSocket("ws://127.0.0.1:3001")
-
-    socket.addEventListener('open', function (event) {
-      socket.send(json.hash)
+    events.addEventListener('open', function (event) {
       pushData("Connected!")
     });
 
-    socket.addEventListener('message', function (event) {
-        pushData(event.data)
+    events.addEventListener("message", (ev) => {
+      pushData(JSON.parse(ev.data))
     });
-
-    console.log(`the component is now mounted.`)
   })
 
   onUpdated(() => {

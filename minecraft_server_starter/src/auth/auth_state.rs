@@ -1,4 +1,4 @@
-use std::{time::{SystemTime, Duration}, sync::Arc, ops::{AddAssign, Deref}, collections::HashMap};
+use std::{time::{SystemTime, Duration}, sync::Arc, ops::AddAssign, collections::HashMap};
 use rand::distributions::{Alphanumeric, DistString};
 use rocket::{http::{Status}, fairing::AdHoc};
 use rocket::request::{self, FromRequest};
@@ -28,8 +28,6 @@ struct AuthStateTime{
     creation_time: SystemTime,
     expire_time: Duration,
 }
-
-pub struct AuthIndex(pub String);
 
 impl AuthState{
 
@@ -61,14 +59,6 @@ impl AuthState{
         let id = format!("{}_{}", self.username.clone(), Alphanumeric.sample_string(&mut rand::thread_rng(), 16));
         lock.insert(id.clone(), self);
         return id;
-    }
-}
-
-impl Deref for AuthIndex {
-    type Target = String;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
     }
 }
 
@@ -125,23 +115,6 @@ impl<'r> FromRequest<'r> for AuthState {
                     },
                     None => Outcome::Failure((Status::Unauthorized, ())),
                 };
-            },
-            None => {
-                Outcome::Failure((Status::Unauthorized, ()))
-            }
-        }
-    }
-}
-
-#[rocket::async_trait]
-impl<'r> FromRequest<'r> for AuthIndex {
-    type Error = ();
-    async fn from_request(req: &'r Request<'_>) -> request::Outcome<AuthIndex, Self::Error> {
-        let user_id = req.cookies().get_private("user_id");
-
-        return match user_id {
-            Some(user_id) => {
-                Outcome::Success(AuthIndex(user_id.value().to_owned()))
             },
             None => {
                 Outcome::Failure((Status::Unauthorized, ()))

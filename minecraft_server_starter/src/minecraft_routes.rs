@@ -1,10 +1,13 @@
 use std::sync::Arc;
 
+use rocket::response::stream::{EventStream, Event};
 use rocket::{State, fairing::AdHoc};
 use rocket::serde::json::Json;
 use serde::{Serialize, Deserialize};
 use serde_json::{json};
 use tokio::sync::Mutex;
+use tokio::sync::watch::Receiver;
+use tokio_stream::StreamExt;
 
 use crate::auth::auth_state::AuthState;
 use crate::server_process::{ServerProcess};
@@ -26,6 +29,29 @@ async fn list_players(process: &State<Arc<Mutex<ServerProcess>>>, _auth_state: A
 #[serde(crate = "rocket::serde")]
 struct CommandPost {
     command: String
+}
+
+#[get("/console")]
+async fn console(
+    stdout_rx: &State<Receiver<String>>,
+    _auth_state: AuthState
+) -> EventStream![] {
+
+    let stdout_rx = stdout_rx.inner().clone();
+
+    EventStream! {
+        let mut watch_stream = tokio_stream::wrappers::WatchStream::new(stdout_rx).map(|data| {
+            Event::json(&data)
+        });
+        loop {
+            match watch_stream.next().await {
+                Some(it) => {
+                    yield it;
+                },
+                None => break,
+            };
+        }
+    }
 }
 
 #[post("/execute_cmd", format = "json", data = "<message>")]
@@ -53,7 +79,7 @@ async fn execute_cmd(
 pub fn stage(server_process: Arc<tokio::sync::Mutex<ServerProcess>>) -> AdHoc {
     AdHoc::on_ignite("Server Process", |rocket| async move{
         rocket.manage(server_process)
-            .mount("/api", routes![last_std, execute_cmd, list_players])
+            .mount("/api", routes![last_std, execute_cmd, list_players, console])
     })
 }
 

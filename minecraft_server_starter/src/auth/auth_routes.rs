@@ -8,7 +8,7 @@ use rocket::{fairing::AdHoc};
 use rocket::serde::{Deserialize, json::Json, json::json};
 use tokio::sync::{RwLock};
 
-use crate::auth::auth_state::{AuthState, AuthIndex};
+use crate::auth::auth_state::AuthState;
 use crate::config::{ServerConfig};
 
 use super::database::{self, Connection};
@@ -72,14 +72,6 @@ async fn authenticate_user(
     //ws_auth_vec: Arc<RwLock<Vec<String>>>
 }
 
-#[get("/request_console")]
-async fn request_console(
-    auth_state: AuthState,
-    auth_index: AuthIndex
-) ->  Result<rocket::serde::json::Value, (Status, Option<rocket::serde::json::Value>)> {
-    Ok(json!({ "hash": format!("{}-{}", *auth_index, auth_state.web_socket_auth_token) }))
-}
-
 pub fn stage(config: ServerConfig) -> AdHoc {
 
     AdHoc::on_ignite("Auth Stage", |rocket| async {
@@ -95,7 +87,7 @@ pub fn stage(config: ServerConfig) -> AdHoc {
             ).unwrap()
         );
 
-        rocket.mount("/auth", routes![authenticate_user, request_console])
+        rocket.mount("/auth", routes![authenticate_user])
             .manage(database::connect(config, &argon))
             .manage(argon)
     })

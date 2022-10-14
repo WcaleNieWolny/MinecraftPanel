@@ -7,11 +7,9 @@ mod auth;
 
 use std::{process::Stdio, env, path::PathBuf, io::{BufRead}, sync::Arc, thread, collections::HashMap};
 use crate::config::ServerConfig;
-use rocket::{http::Method, log::private::warn};
+use rocket::http::Method;
 use rocket_cors::{AllowedOrigins, CorsOptions};
-use tokio::{sync::{Mutex, watch::Receiver, RwLock}, io::AsyncReadExt, process::Command, net::{TcpListener, TcpStream}};
-use futures_util::{StreamExt, SinkExt};
-use tokio_tungstenite::{tungstenite::{Error, Message}};
+use tokio::{sync::{Mutex, RwLock}, io::AsyncReadExt, process::Command};
 
 use crate::{server_process::ServerProcess, auth::{auth_routes, auth_state::{self, AuthState}}}; // 0.2.4, features = ["full"]
 
@@ -59,8 +57,6 @@ async fn main() -> anyhow::Result<()>{
 
     let auth_vec = Arc::new(RwLock::new(HashMap::<String, AuthState>::new()));
 
-    setup_websocket("127.0.0.1:3001", stdout_rx, auth_vec.clone()).await?;
-
     let cors = CorsOptions::default()
     .allowed_origins(AllowedOrigins::all())
     .allowed_methods(
@@ -78,132 +74,9 @@ async fn main() -> anyhow::Result<()>{
     .attach(auth_routes::stage(config.clone()))
     .attach(cors.to_cors().unwrap())
     .manage(cors.to_cors().unwrap())
+    .manage(stdout_rx)
     .mount("/", rocket_cors::catch_all_options_routes())
     .launch().await;
-
-    Ok(())
-}
-
-async fn setup_websocket(addr: &str, stdout_rx: Receiver<String>, auth_map: Arc<RwLock<HashMap<String, AuthState>>>) -> anyhow::Result<()>{
-    let listener = TcpListener::bind(addr).await?;
-
-    tokio::spawn(async move {
-        while let Ok((stream, _)) = listener.accept().await {
-            let peer = stream.peer_addr().expect("connected streams should have a peer address");
-            let stdout_rx_clone = stdout_rx.clone();
-            let auth_map_clone = auth_map.clone();
-            tokio::spawn(async move {
-                accept_websocket_connection(peer, stream, stdout_rx_clone, auth_map_clone).await;
-            });
-        };
-    });
-
-    Ok(())
-}
-
-
-async fn accept_websocket_connection(
-    peer: std::net::SocketAddr, 
-    stream: TcpStream, 
-    stdout_rx: Receiver<String>,
-    auth_map: Arc<RwLock<HashMap<String, AuthState>>>
-) {
-    if let Err(e) = handle_websocket_connection(peer, stream, stdout_rx, auth_map).await {
-        match e {
-            Error::ConnectionClosed | Error::Protocol(_) | Error::Utf8 => (),
-            err => error!("Error processing connection: {}", err),
-        }
-    }
-}
-
-async fn handle_websocket_connection(
-    _peer: std::net::SocketAddr, 
-    stream: TcpStream, 
-    stdout_rx: Receiver<String>,
-    auth_map: Arc<RwLock<HashMap<String, AuthState>>>
-) -> Result<(), Error> {
-    let addr = stream.peer_addr().expect("connected streams should have a peer address");
-    info!("Peer address: {}", addr);
-
-    let ws_stream = tokio_tungstenite::accept_async(stream)
-        .await
-        .expect("Error during the websocket handshake occurred");
-
-    info!("New WebSocket connection: {}", addr);
-
-    let (mut write, mut read) = ws_stream.split();
-
-    let sleep = tokio::time::sleep(std::time::Duration::from_secs(5));
-    tokio::select! {
-        biased;
-        state = async {
-            match read.next().await {
-                Some(msg) => {
-                    match msg {
-                        Ok(msg) => {
-                            if msg.is_binary(){
-                                return Err(())
-                            }
-        
-                            let msg = msg.to_text().unwrap();
-
-                            let split: Vec<&str> = msg.split("-").collect();
-                            if split.len() != 2 {
-                                return Err(());
-                            }
-
-                            let auth_map = auth_map.read().await;
-                            let auth_user = match auth_map.get(split[0]){
-                                Some(val) => val,
-                                None => return Err(()),
-                            };
-
-                            if auth_user.web_socket_auth_token.eq(split[1]) {
-                                return Ok(())
-                            }
-
-                            return Err(())
-
-                        },
-                        Err(_) => return Err(())
-                    }
-                },
-        
-                None => {
-                    return Err(());
-                },
-            };
-        } => {
-            if state.is_err(){
-                return Ok(());
-            }
-        },
-
-        _ = async {
-            sleep.await
-        } => {
-            warn!("EXIT!");
-            return Ok(());
-        }
-    };
-
-    let mut watch_stream = tokio_stream::wrappers::WatchStream::new(stdout_rx).map(|data| {
-        Message::Text(data)
-    });
-
-    loop {
-        match watch_stream.next().await {
-            Some(it) => {
-                match write.send(it).await {
-                    Ok(_) => {}
-                    Err(_) => {
-                        break;
-                    }
-                };
-            },
-            None => break,
-        };
-    }
 
     Ok(())
 }
