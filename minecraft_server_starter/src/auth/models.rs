@@ -1,10 +1,12 @@
+use std::time::SystemTime;
+
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
-use diesel::prelude::*;
+use diesel::{prelude::*};
 use rand::rngs::OsRng;
 use serde::{Serialize, Deserialize};
 use diesel::sqlite::SqliteConnection;
 
-use super::schema::users;
+use super::schema::{users, sessions};
 
 #[derive(AsChangeset, Serialize, Deserialize, Queryable, Insertable, Debug)]
 #[diesel(table_name = users)]
@@ -13,6 +15,20 @@ pub struct User {
     pub username: String,
     pub password: String,
     pub user_type: i16,
+}
+
+#[derive(AsChangeset, Queryable, Insertable, Debug)]
+#[diesel(table_name = sessions)]
+pub struct UserSession {
+    pub id: Option<i32>,
+    pub expiration: chrono::naive::NaiveDateTime, //this is bullshit - just let me use std type
+    pub user_id: i32,
+}
+
+impl UserSession {
+    pub fn read_by_id(id: i32, connection: &mut SqliteConnection) -> QueryResult<UserSession> {
+        sessions::table.filter(sessions::id::nullable(sessions::id).eq(id)).first(connection)
+    }
 }
 
 impl User {

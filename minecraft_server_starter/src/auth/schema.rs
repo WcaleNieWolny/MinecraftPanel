@@ -9,9 +9,15 @@ diesel::table! {
     }
 }
 
-// CREATE TABLE USERS(
-//     ID INT PRIMARY KEY      NOT NULL,
-//     USERNAME      TEXT      NOT NULL,
-//     PASSWORD      TEXT      NOT NULL,
-//     USER_TYPE     SMALLINT  NOT NULL
-// )
+diesel::table! {
+    sessions (id) {
+        id -> Nullable<Integer>,
+        expiration -> Timestamp,
+        user_id -> Integer,
+    }
+}
+
+diesel::allow_tables_to_appear_in_same_query!(
+    sessions,
+    users,
+);

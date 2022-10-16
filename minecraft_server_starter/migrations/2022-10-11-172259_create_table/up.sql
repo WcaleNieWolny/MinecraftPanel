@@ -5,3 +5,9 @@ CREATE TABLE `users` (
   `password` text NOT NULL,
   `user_type` smallint NOT NULL
 );
+
+CREATE TABLE `sessions` ( 
+  `id` int AUTO_INCREMENT PRIMARY KEY, 
+  `expiration` DATETIME NOT NULL, 
+  `user_id` int NOT NULL 
+);
