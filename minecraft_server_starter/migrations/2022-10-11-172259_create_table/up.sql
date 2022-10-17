@@ -7,7 +7,7 @@ CREATE TABLE `users` (
 );
 
 CREATE TABLE `sessions` ( 
-  `id` int AUTO_INCREMENT PRIMARY KEY, 
+  `id` INTEGER PRIMARY KEY AUTOINCREMENT, 
   `expiration` DATETIME NOT NULL, 
   `user_id` int NOT NULL 
 );
