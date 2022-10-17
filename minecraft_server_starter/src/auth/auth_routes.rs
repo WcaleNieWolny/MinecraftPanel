@@ -21,14 +21,13 @@ struct LoginForm {
 }
 //POST /auth/authenticate_user application/json
 //POST /api/auth/authenticate_user application/json
-//Admin pwd: rObxDnsF5gL0pUM
+//Admin pwd: w7N0eKhUhoFgLnQ
 #[post("/authenticate_user", format="json", data = "<message>")]
 async fn authenticate_user(
     jar: &CookieJar<'_>, 
     message: Json<LoginForm>, 
     argon: &State<Argon2<'_>>, 
-    mut connection: Connection,
-    cache: &State<Arc<RwLock<HashMap<String, AuthState>>>>
+    mut connection: Connection
 ) ->  Result<rocket::serde::json::Value, (Status, Option<rocket::serde::json::Value>)> {
 
     let password = &message.password;
@@ -43,15 +42,15 @@ async fn authenticate_user(
                 Err(_) => return Err((Status::InternalServerError, None)),
             };
 
+            println!("I: {:?}", user);
+
             if argon.inner().verify_password(password.as_bytes(), &parsed_hash).is_ok(){
                 println!("PWD MATCH!");
 
-                let auth_state = match AuthState::new(user) {
-                    Ok(auth_state) => auth_state,
+                let auth_id = match AuthState::create_session(&user, &mut connection) {
+                    Ok(val) => val,
                     Err(_) => return Err((Status::InternalServerError, None)),
                 };
-
-                let auth_id = auth_state.put_in_cache(cache).await;
 
                 jar.add_private(
                     Cookie::build("user_id", auth_id)

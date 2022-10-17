@@ -17,7 +17,6 @@ use crate::{auth::{auth_routes, auth_state::{self, AuthState}}}; // 0.2.4, featu
 async fn main() -> anyhow::Result<()>{
 
     let config = ServerConfig::new()?;
-    let auth_vec = Arc::new(RwLock::new(HashMap::<String, AuthState>::new()));
 
     let cors = CorsOptions::default()
     .allowed_origins(AllowedOrigins::all())
@@ -32,7 +31,7 @@ async fn main() -> anyhow::Result<()>{
     let _ = rocket::build()
     .manage(config)
     .attach(server_process::stage().await)
-    .attach(auth_state::stage(auth_vec))
+    .attach(auth_state::stage())
     .attach(minecraft_routes::stage())
     .attach(minecraft_routes::shutdown_hook())
     .attach(auth_routes::stage())

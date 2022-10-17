@@ -20,7 +20,13 @@ pub fn connect(config: ServerConfig, argon2: &Argon2) -> SqlitePool {
     let pool = Pool::new(manager).expect("Failed to create pool");
 
     let mut connection = Connection(pool.try_get().unwrap());
-    let admin_user = super::models::User::read_by_username("admin", &mut connection);
+    check_admin(argon2, &mut connection);
+
+    pool
+}
+
+fn check_admin(argon2: &Argon2, connection: &mut Connection){
+    let admin_user = super::models::User::read_by_username("admin", connection);
     
     if admin_user.is_err() {
         let password = Alphanumeric.sample_string(&mut rand::thread_rng(), 15);
@@ -39,10 +45,8 @@ pub fn connect(config: ServerConfig, argon2: &Argon2) -> SqlitePool {
             user_type: 1,
         };
 
-        user.create(argon2, &mut connection).expect("Couldn't create admin user!");
+        user.create(argon2, connection).expect("Couldn't create admin user!");
     }
-
-    pool
 }
 
 // Connection request guard type: a wrapper around an r2d2 pooled connection.

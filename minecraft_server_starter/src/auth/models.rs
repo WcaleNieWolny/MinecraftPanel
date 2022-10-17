@@ -1,5 +1,3 @@
-use std::time::SystemTime;
-
 use argon2::{password_hash::SaltString, Argon2, PasswordHasher};
 use diesel::{prelude::*};
 use rand::rngs::OsRng;
@@ -26,8 +24,23 @@ pub struct UserSession {
 }
 
 impl UserSession {
+
+    pub fn new(expiration: chrono::naive::NaiveDateTime, user_id: i32) -> Self{
+        Self {
+            id: None,
+            expiration, user_id 
+        }
+    }
+
     pub fn read_by_id(id: i32, connection: &mut SqliteConnection) -> QueryResult<UserSession> {
         sessions::table.filter(sessions::id::nullable(sessions::id).eq(id)).first(connection)
+    }
+    pub fn put(&self, connection: &mut SqliteConnection) -> anyhow::Result<UserSession>{
+        diesel::insert_into(sessions::table)
+            .values(self)
+            .execute(connection)?;
+
+        Ok(sessions::table.order(sessions::id.desc()).first(connection)?)
     }
 }
 
@@ -38,6 +51,10 @@ impl User {
 
     pub fn read_by_username(username: &str, connection: &mut SqliteConnection) -> QueryResult<User> {
         users::table.filter(users::username.eq(username)).first(connection)
+    }
+
+    pub fn read_by_id(id: i32, connection: &mut SqliteConnection) -> QueryResult<User> {
+        users::table.filter(users::id.nullable().eq(id)).first(connection)
     }
 
     pub fn create(self, argon2: &Argon2, connection: &mut SqliteConnection) -> anyhow::Result<()>{
