@@ -1,5 +1,5 @@
-use std::{time::{SystemTime, Duration}, sync::Arc, ops::AddAssign, collections::HashMap};
-use chrono::{NaiveDateTime, Local, NaiveTime};
+use std::{time::{SystemTime}, sync::Arc, ops::{AddAssign, Add}, collections::HashMap};
+use chrono::{NaiveDateTime, Local, NaiveTime, Duration};
 use rand::distributions::{Alphanumeric, DistString};
 use rocket::{http::{Status}, fairing::AdHoc};
 use rocket::request::{self, FromRequest};
@@ -47,8 +47,9 @@ impl AuthState{
     }
 
     pub fn create_session(user: &User, connection: &mut Connection) -> anyhow::Result<String>{
+        let naive_date_time = chrono::Utc::now().naive_utc() + Duration::hours(3);
         let session = UserSession::new(
-            NaiveDateTime::new(Local::now().date_naive(), NaiveTime::from_hms(3, 0, 0)),
+            naive_date_time,
             user.id.unwrap()
         );
 
@@ -63,7 +64,7 @@ pub fn stage() -> AdHoc {
     AdHoc::on_ignite("Auth StateStage", |rocket| async {
 
         tokio::spawn(async move {
-            let mut interval = tokio::time::interval(Duration::from_secs(60));
+            let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
 
             loop {
                 interval.tick().await;
