@@ -1,10 +1,13 @@
 test:
-	$(MAKE) build
+	$(MAKE) build_dev
 	ROCKET_LOG_LEVEL=normal ./target/release/minecraft_server_starter
 build:
 	$(MAKE) clean
 	cargo build -r
 	
+build_dev:
+	$(MAKE) clean
+	cargo build -r --features "debug"
 
 clean:
 	# pkill java 2> /dev/null || echo > /dev/null

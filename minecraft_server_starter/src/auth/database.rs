@@ -11,6 +11,8 @@ use rocket::outcome::{Outcome};
 
 use crate::config::ServerConfig;
 
+use super::models::UserSession;
+
 // An alias to the type for a pool of Diesel Mysql Connection
 pub type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -19,10 +21,38 @@ pub fn connect(config: ServerConfig, argon2: &Argon2) -> SqlitePool {
     let manager = ConnectionManager::<SqliteConnection>::new(config.mysql_string);
     let pool = Pool::new(manager).expect("Failed to create pool");
 
+    let connection_clone = Connection(pool.clone().try_get().unwrap());
     let mut connection = Connection(pool.try_get().unwrap());
+    
+    spwan_cleanup_task(connection_clone);
     check_admin(argon2, &mut connection);
 
     pool
+}
+
+fn spwan_cleanup_task(mut connection: Connection){
+    tokio::spawn(async move {
+        let mut interval = tokio::time::interval(std::time::Duration::from_secs(3 * 60 * 60));
+
+        loop {
+            interval.tick().await;
+            let sessions = UserSession::read_all(&mut connection);
+
+            for session in sessions {
+                if chrono::Utc::now().naive_utc() > session.expiration{
+                    if cfg!(feature = "debug"){
+                        info!("Removed session {:?} from database!", session);
+                    }
+                    match session.delete(&mut connection) {
+                        true => { },
+                        false => {
+                            error!("Couldn't remove expired session from db!!!")
+                        },
+                    }
+                }
+            }
+        }
+    });
 }
 
 fn check_admin(argon2: &Argon2, connection: &mut Connection){

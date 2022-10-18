@@ -1,12 +1,8 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-
 use argon2::{Argon2, Params, PasswordHash, PasswordVerifier};
 use rocket::State;
 use rocket::http::{CookieJar, Cookie, SameSite, Status};
 use rocket::{fairing::AdHoc};
 use rocket::serde::{Deserialize, json::Json, json::json};
-use tokio::sync::{RwLock};
 
 use crate::auth::auth_state::AuthState;
 use crate::config::{ServerConfig};
@@ -41,8 +37,6 @@ async fn authenticate_user(
                 Ok(val) => val,
                 Err(_) => return Err((Status::InternalServerError, None)),
             };
-
-            println!("I: {:?}", user);
 
             if argon.inner().verify_password(password.as_bytes(), &parsed_hash).is_ok(){
                 println!("PWD MATCH!");

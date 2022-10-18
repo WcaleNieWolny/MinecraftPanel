@@ -1,12 +1,9 @@
-use std::{time::{SystemTime}, sync::Arc, ops::{AddAssign, Add}, collections::HashMap};
-use chrono::{NaiveDateTime, Local, NaiveTime, Duration};
-use rand::distributions::{Alphanumeric, DistString};
-use rocket::{http::{Status}, fairing::AdHoc};
+use chrono::Duration;
+use rocket::http::Status;
 use rocket::request::{self, FromRequest};
-use rocket::{Request, State};
+use rocket::Request;
 use rocket::outcome::{Outcome};
 use rocket::outcome::try_outcome;
-use tokio::sync::{RwLock, Mutex};
 
 use super::{models::{User, UserSession}, database::Connection};
 
@@ -22,17 +19,9 @@ pub struct AuthState{
     pub user_type: UserType,
 }
 
-#[derive(Clone, Debug)]
-struct AuthStateTime{
-    creation_time: SystemTime,
-    expire_time: Duration,
-}
-
 impl AuthState{
 
     pub fn new(db_user: &User) -> anyhow::Result<Self>{
-
-        let hash = Alphanumeric.sample_string(&mut rand::thread_rng(), 32);
 
         Ok(
             Self {
@@ -48,6 +37,7 @@ impl AuthState{
 
     pub fn create_session(user: &User, connection: &mut Connection) -> anyhow::Result<String>{
         let naive_date_time = chrono::Utc::now().naive_utc() + Duration::hours(3);
+
         let session = UserSession::new(
             naive_date_time,
             user.id.unwrap()
@@ -57,23 +47,6 @@ impl AuthState{
 
         Ok(session.id.unwrap().to_string())
     }
-}
-
-pub fn stage() -> AdHoc {
-
-    AdHoc::on_ignite("Auth StateStage", |rocket| async {
-
-        tokio::spawn(async move {
-            let mut interval = tokio::time::interval(std::time::Duration::from_secs(60));
-
-            loop {
-                interval.tick().await;
-                //TODO!
-            }
-        });
-
-        rocket
-    })
 }
 
 impl AuthState {
@@ -96,12 +69,15 @@ impl<'r> FromRequest<'r> for AuthState {
                     Err(_) => return Outcome::Failure((Status::InternalServerError, ())),
                 };
 
-                
 
                 let session = match UserSession::read_by_id(user_id, &mut connection) {
                     Ok(val) => val,
                     Err(_) => return Outcome::Failure((Status::Unauthorized, ())),
                 };
+
+                if chrono::Utc::now().naive_utc() > session.expiration{
+                    return Outcome::Failure((Status::Unauthorized, ()))
+                }
 
                 let user = match User::read_by_id(session.user_id, &mut connection) {
                     Ok(val) => val,

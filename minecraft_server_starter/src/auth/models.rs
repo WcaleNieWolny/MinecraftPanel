@@ -35,12 +35,26 @@ impl UserSession {
     pub fn read_by_id(id: i32, connection: &mut SqliteConnection) -> QueryResult<UserSession> {
         sessions::table.filter(sessions::id::nullable(sessions::id).eq(id)).first(connection)
     }
+
+    pub fn read_all(connection: &mut SqliteConnection) -> Vec<UserSession> {
+        sessions::table.load::<UserSession>(connection).unwrap()
+    }
+
     pub fn put(&self, connection: &mut SqliteConnection) -> anyhow::Result<UserSession>{
         diesel::insert_into(sessions::table)
             .values(self)
             .execute(connection)?;
 
         Ok(sessions::table.order(sessions::id.desc()).first(connection)?)
+    }
+
+    pub fn delete(self, connection: &mut SqliteConnection) -> bool {
+        let id = match self.id {
+            Some(val) => val,
+            None =>  return false
+        };
+
+        diesel::delete(sessions::table.filter(sessions::id::nullable(sessions::id).eq(id))).execute(connection).is_ok()
     }
 }
 
