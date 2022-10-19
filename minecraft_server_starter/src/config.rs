@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 pub struct ServerConfig{
     pub version: String,
     pub mysql_string: String,
-    pub serve_backend: bool
+    pub serve_frontend: bool
 }
 
 impl Default for ServerConfig {
@@ -15,7 +15,7 @@ impl Default for ServerConfig {
         Self {
             version: "paper-1.18.2".to_string(),
             mysql_string: "mysql://root:my_secret_password@127.0.0.1:6033/panel_users".to_string(),
-            serve_backend: true
+            serve_frontend: true
         }
     }
 }
