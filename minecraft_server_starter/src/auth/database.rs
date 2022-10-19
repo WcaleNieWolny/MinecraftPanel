@@ -38,6 +38,10 @@ fn spwan_cleanup_task(mut connection: Connection){
             interval.tick().await;
             let sessions = UserSession::read_all(&mut connection);
 
+            if cfg!(feature = "debug"){
+                info!("Running database cleaning");
+            }
+
             for session in sessions {
                 if chrono::Utc::now().naive_utc() > session.expiration{
                     if cfg!(feature = "debug"){

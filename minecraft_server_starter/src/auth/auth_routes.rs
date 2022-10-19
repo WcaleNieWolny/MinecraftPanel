@@ -39,7 +39,10 @@ async fn authenticate_user(
             };
 
             if argon.inner().verify_password(password.as_bytes(), &parsed_hash).is_ok(){
-                println!("PWD MATCH!");
+
+                if cfg!(feature = "debug"){
+                    info!("PWD MATCH!");
+                }
 
                 let auth_id = match AuthState::create_session(&user, &mut connection) {
                     Ok(val) => val,
@@ -62,13 +65,17 @@ async fn authenticate_user(
             Err((Status::BadRequest, Some(json!({ "error": "Invalid credentials" }))))
         }
     }
-    //ws_auth_vec: Arc<RwLock<Vec<String>>>
 }
 
 #[get("/logout")]
-async fn logout(auth_state: AuthState) -> Status {
-    auth_state.logout().await;
-    Status::NoContent
+async fn logout(
+    auth_state: AuthState,
+    mut connection: Connection
+) -> Status {
+    return match auth_state.logout(&mut connection).await {
+        Ok(_) => Status::NoContent,
+        Err(_) => Status::InternalServerError,
+    };
 }
 
 pub fn stage() -> AdHoc {

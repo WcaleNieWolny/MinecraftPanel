@@ -54,6 +54,10 @@ impl UserSession {
             None =>  return false
         };
 
+        UserSession::delete_by_id(id, connection)
+    }
+
+    pub fn delete_by_id(id: i32, connection: &mut SqliteConnection) -> bool {
         diesel::delete(sessions::table.filter(sessions::id::nullable(sessions::id).eq(id))).execute(connection).is_ok()
     }
 }

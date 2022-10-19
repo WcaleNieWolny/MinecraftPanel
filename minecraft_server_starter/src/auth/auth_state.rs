@@ -1,3 +1,4 @@
+use anyhow::anyhow;
 use chrono::Duration;
 use rocket::http::Status;
 use rocket::request::{self, FromRequest};
@@ -17,6 +18,7 @@ pub enum UserType {
 pub struct AuthState{
     pub username: String,
     pub user_type: UserType,
+    pub id: Option<i32>,
 }
 
 impl AuthState{
@@ -30,7 +32,8 @@ impl AuthState{
                     0 => UserType::NORMAL,
                     1 => UserType::ADMIN,
                     _ => return Err(anyhow::Error::msg("Invalid user type in the database"))
-                }
+                },
+                id: db_user.id
             }
         )
     }
@@ -50,8 +53,16 @@ impl AuthState{
 }
 
 impl AuthState {
-    pub async fn logout(&self){
-        //TODO!
+    pub async fn logout(&self, connection: &mut Connection) -> anyhow::Result<()>{
+        let id = match self.id {
+            Some(val) => val,
+            None => return Err(anyhow!("Couldn't get session id"))
+        };
+
+        return match UserSession::delete_by_id(id, connection) {
+            true => Ok(()),
+            false => Err(anyhow!("Databse logout not sucessful")),
+        }
     }
 }
 
@@ -76,7 +87,10 @@ impl<'r> FromRequest<'r> for AuthState {
                 };
 
                 if chrono::Utc::now().naive_utc() > session.expiration{
-                    return Outcome::Failure((Status::Unauthorized, ()))
+                    return match session.delete(&mut connection) {
+                        true => Outcome::Failure((Status::Unauthorized, ())),
+                        false => Outcome::Failure((Status::InternalServerError, ())),
+                    };
                 }
 
                 let user = match User::read_by_id(session.user_id, &mut connection) {

@@ -80,7 +80,7 @@ async fn execute_cmd(
         false => cmd
     };
 
-    println!("CMD: {}", cmd);
+    println!("$ {}", cmd);
 
     process.write_to_stdin(cmd);
 
