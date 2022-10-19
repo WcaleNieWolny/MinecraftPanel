@@ -39,7 +39,7 @@ async fn main() -> anyhow::Result<()>{
     .mount("/", rocket_cors::catch_all_options_routes());
 
     //Please provide a better solution. No idea what I just did
-    if config_clone.serve_backend {
+    if config_clone.serve_frontend {
         let rocket = rocket.mount("/public", FileServer::from(relative!("static")));
         let _ = rocket.launch().await;
     }else{
