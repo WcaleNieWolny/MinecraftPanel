@@ -1,6 +1,6 @@
 test:
 	$(MAKE) build_dev
-	ROCKET_LOG_LEVEL=normal ./target/release/minecraft_server_starter
+	ROCKET_LOG_LEVEL=normal PANEL_SERVE_FRONTEND=false ./target/release/minecraft_server_starter
 build:
 	$(MAKE) clean
 	cargo build -r
@@ -15,4 +15,5 @@ clean:
 
 release:
 	$(MAKE) clean
+	$(MAKE) build
 	upx --best --lzma ./target/release/minecraft_server_starter

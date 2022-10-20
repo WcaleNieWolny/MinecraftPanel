@@ -10,6 +10,7 @@
 <script setup lang="ts">
 
     const formdata = ref("")
+    const runtimeConfig = useRuntimeConfig()
     let history = [] as string[]
     let historyIndex = -1
 
@@ -26,15 +27,12 @@
         }
      
         emit('console-data-send', data)
-
-        await fetch("http://127.0.0.1:8000/api/execute_cmd", {    
+        
+        await $fetch(`${runtimeConfig.public.apiUrl}/api/execute_cmd`, {
             method: 'POST',
             cache: 'no-cache',
             credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ command: data })
+            body: { command: data }
         })
 
         history.push(data)

@@ -8,7 +8,6 @@ mod auth;
 use crate::config::ServerConfig;
 use rocket::{http::Method, fs::FileServer};
 use rocket_cors::{AllowedOrigins, CorsOptions};
-use rocket::fs::relative;
 
 use crate::{auth::{auth_routes}};
 
@@ -40,7 +39,7 @@ async fn main() -> anyhow::Result<()>{
 
     //Please provide a better solution. No idea what I just did
     if config_clone.serve_frontend {
-        let rocket = rocket.mount("/public", FileServer::from(relative!("static")));
+        let rocket = rocket.mount("/", FileServer::from("./static"));
         let _ = rocket.launch().await;
     }else{
         let _ = rocket.launch().await;

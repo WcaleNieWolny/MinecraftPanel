@@ -9,12 +9,13 @@
 </template>
 
 <script setup lang="ts">
-    async function onClick() {
-        const auth = useState('auth')
-        const apiUrl = useApiUrl()
+    const runtimeConfig = useRuntimeConfig()
+    const auth = useState('auth')
+
+    async function onClick() { 
         auth.value = false
 
-        await fetch(`${apiUrl.value}/auth/logout`, {    
+        await fetch(`${runtimeConfig.public.apiUrl}/auth/logout`, {    
             method: 'GET',
             cache: 'no-cache',
             credentials: 'include',

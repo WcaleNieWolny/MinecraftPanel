@@ -13,6 +13,7 @@
   const items =  ref(getData(1))
   const converter = new Convert()
   const list = ref<HTMLDivElement>();
+  const runtimeConfig = useRuntimeConfig()
 
   const pushData = (string: string, parseAnsi = true) => {
       items.value.push({
@@ -24,9 +25,9 @@
 
 
   onMounted(async () => {
-    const apiUrl = useApiUrl()
+    
 
-    const events = new EventSource(`${apiUrl.value}/api/console`, { withCredentials: true });
+    const events = new EventSource(`${runtimeConfig.public.apiUrl}/api/console`, { withCredentials: true });
 
     events.addEventListener('open', function (event) {
       pushData("Connected!")

@@ -31,7 +31,7 @@
 </template>
 
 <script setup lang="ts">
-    const apiUrl = useApiUrl()
+    const runtimeConfig = useRuntimeConfig()
     var username = ref("")
     var password = ref("")
 
@@ -52,7 +52,7 @@
         showError.value = true;
 
         let t0 = performance.now();
-        let response = await fetch(`${apiUrl.value}/auth/authenticate_user`, {    
+        let response = await fetch(`${runtimeConfig.public.apiUrl}/auth/authenticate_user`, {    
             method: 'POST',
             cache: 'no-cache',
             credentials: 'include',

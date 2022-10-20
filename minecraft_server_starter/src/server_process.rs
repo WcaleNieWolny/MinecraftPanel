@@ -226,7 +226,9 @@ async fn prepere_server_jar(servrer_config: &ServerConfig) -> anyhow::Result<Pat
     let mut path = env::current_dir().unwrap();
     path.push("run/srv.jar");
 
-    println!("EXIST: {}", path.exists());
+    if cfg!(feature = "debug"){
+        info!("EXIST: {}", path.exists());
+    }
 
     let version = servrer_config.version.replace("paper-", "");
     let build_id = make_paper_build_id_request(&version).await?;
@@ -249,7 +251,9 @@ async fn make_paper_build_id_request(version: &String) -> anyhow::Result<i64>{
     let latest_build = &builds[builds.len() - 1];
     let latest_build = latest_build.as_i64().expect("Couln't convert version to i64");
 
-    println!("Fetched latest paper build as {}", latest_build);
+    if cfg!(feature = "debug"){
+        info!("Fetched latest paper build as {}", latest_build);
+    }
 
     Ok(latest_build)
 }
@@ -279,12 +283,14 @@ pub async fn stage() -> AdHoc{
 
         let config = rocket.state::<ServerConfig>().unwrap();
         let server_jar_path = prepere_server_jar(config).await.expect("Couldn't prepare server jar!");
-
-        println!("VER: {}", config.version);
+        
+        if cfg!(feature = "debug"){
+            info!("VER: {}", config.version);
+        }
     
         let server_jar_path_str = server_jar_path.to_str().expect("Couldn't format server jar path to string");
         let server_jar_pwd_path = server_jar_path.parent().expect("Coudln't find parrent path for server jar");
-    
+
         let cmd = Command::new("java")
             .arg("-Dterminal.jline=false")
             .arg("-Dterminal.ansi=true")

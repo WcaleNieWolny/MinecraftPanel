@@ -1,6 +1,8 @@
+use std::env;
 //SRC: https://github.com/sean3z/rocket-diesel-rest-api-example/blob/master/src/db.rs
 use std::ops::{Deref, DerefMut};
 use argon2::Argon2;
+use diesel_migrations::{MigrationHarness, EmbeddedMigrations, embed_migrations};
 use rand::distributions::{Alphanumeric, DistString};
 use rocket::http::Status;
 use rocket::request::{self, FromRequest};
@@ -8,6 +10,7 @@ use rocket::{Request, State};
 use diesel::sqlite::SqliteConnection;
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use rocket::outcome::{Outcome};
+use anyhow::anyhow;
 
 use crate::config::ServerConfig;
 
@@ -15,19 +18,38 @@ use super::models::UserSession;
 
 // An alias to the type for a pool of Diesel Mysql Connection
 pub type SqlitePool = Pool<ConnectionManager<SqliteConnection>>;
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 
 /// Initialize the database pool.
+/// TODO: ERROR HANDLING!!
 pub fn connect(config: ServerConfig, argon2: &Argon2) -> SqlitePool {
-    let manager = ConnectionManager::<SqliteConnection>::new(config.mysql_string);
+    let db_string = get_sql_conn_string(&config.database_string).expect("Couldn't generate database.db path");
+    let manager = ConnectionManager::<SqliteConnection>::new(db_string);
     let pool = Pool::new(manager).expect("Failed to create pool");
 
-    let connection_clone = Connection(pool.clone().try_get().unwrap());
+    let mut connection_clone = Connection(pool.clone().try_get().unwrap());
     let mut connection = Connection(pool.try_get().unwrap());
     
+    run_migrations(&mut connection_clone).expect("Couldn't run migrations");
     spwan_cleanup_task(connection_clone);
     check_admin(argon2, &mut connection);
 
     pool
+}
+
+fn get_sql_conn_string(string: &String) -> anyhow::Result<String>{
+    return match string.to_lowercase().as_str() {
+        "relative" => {
+            let mut path = env::current_dir().unwrap();
+            path.push("database.db");
+            let str = match path.to_str() {
+                Some(val) => val,
+                None => return Err(anyhow!("Couldn't generate database.db path")),
+            };
+            Ok(str.to_string())
+        },
+        _ => Ok(string.clone())
+    }
 }
 
 fn spwan_cleanup_task(mut connection: Connection){
@@ -81,6 +103,18 @@ fn check_admin(argon2: &Argon2, connection: &mut Connection){
 
         user.create(argon2, connection).expect("Couldn't create admin user!");
     }
+}
+
+fn run_migrations(connection: &mut Connection) -> anyhow::Result<()> {
+
+    return match connection.run_pending_migrations(MIGRATIONS) {
+        Ok(_) => {
+            Ok(())
+        },
+        Err(_) => {
+            Err(anyhow!("Couldn't run migrations!"))
+        }
+    };
 }
 
 // Connection request guard type: a wrapper around an r2d2 pooled connection.
