@@ -14,12 +14,6 @@ use rocket::tokio::select;
 use crate::auth::auth_state::AuthState;
 use crate::server_process::ServerProcess;
 
-#[get("/last_std")]
-async fn last_std(process: &State<Arc<ServerProcess>>, _auth_state: AuthState) ->  rocket::serde::json::Value{
-    let last_std = process.last_stdout();
-    json!({ "last_std": last_std })
-}
-
 #[get("/list_players")]
 async fn list_players(process: &State<Arc<ServerProcess>>, _auth_state: AuthState) ->  rocket::serde::json::Value{
     let list_players = process.list_players().await;
@@ -91,7 +85,7 @@ pub fn stage() -> AdHoc {
     AdHoc::on_ignite("Server Routes", |rocket| async move{
 
         rocket
-            .mount("/api", routes![last_std, execute_cmd, list_players, console])
+            .mount("/api", routes![execute_cmd, list_players, console])
     })
 }
 
