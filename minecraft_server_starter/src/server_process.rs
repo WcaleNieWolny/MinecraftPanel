@@ -107,11 +107,14 @@ impl ServerProcess {
 
     fn send_termination_signal(&self){
         if cfg!(unix){
-            nix::sys::signal::kill(
-                nix::unistd::Pid::from_raw(self.process_id),
-                nix::sys::signal::Signal::SIGTERM)
-                .expect("Couldn't send UNIX SIGTERM");
-            println!("SEND UNIX TERMINATION SIGNAL!")
+
+            match nix::sys::signal::kill(nix::unistd::Pid::from_raw(self.process_id), nix::sys::signal::Signal::SIGTERM) {
+                Ok(_) => { },
+                Err(_) => {
+                    error!("Couldn't send SIGTERM. Child process is likely ded!")
+                },
+            }
+            info!("SEND UNIX TERMINATION SIGNAL!")
         }else{
             self.write_to_stdin("stop".to_string());
         }
@@ -119,10 +122,14 @@ impl ServerProcess {
 
     fn kill_process(&self) {
         if cfg!(unix){
-            nix::sys::signal::kill(
-                nix::unistd::Pid::from_raw(self.process_id),
-                nix::sys::signal::Signal::SIGKILL)
-                .expect("Couldn't send UNIX SIGKILL");
+            match nix::sys::signal::kill(nix::unistd::Pid::from_raw(self.process_id), nix::sys::signal::Signal::SIGKILL) {
+                Ok(_) => { },
+                Err(_) => {
+                    error!("Couldn't send SIGKILL. Child process is likely ded! This is a bug!!!");
+                    error!("Couldn't send SIGKILL. Child process is likely ded! This is a bug!!1");
+                    error!("Couldn't send SIGKILL. Child process is likely ded! This is a bug!!1");
+                },
+            }
             println!("SEND UNIX TERMINATION SIGKILL!")
         }else{
             error!("You are likely using windows! This is not officially supported. We were not able to kill subprocess!")

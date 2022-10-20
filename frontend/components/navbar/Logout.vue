@@ -15,7 +15,7 @@
     async function onClick() { 
         auth.value = false
 
-        await fetch(`${runtimeConfig.public.apiUrl}/auth/logout`, {    
+        await $fetch(`${runtimeConfig.public.apiUrl}/auth/logout`, {    
             method: 'GET',
             cache: 'no-cache',
             credentials: 'include',

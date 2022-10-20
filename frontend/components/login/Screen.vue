@@ -52,14 +52,11 @@
         showError.value = true;
 
         let t0 = performance.now();
-        let response = await fetch(`${runtimeConfig.public.apiUrl}/auth/authenticate_user`, {    
+        let response = await $fetch(`${runtimeConfig.public.apiUrl}/auth/authenticate_user`, {    
             method: 'POST',
             cache: 'no-cache',
             credentials: 'include',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ username: name, password: pwd })
+            body: { username: name, password: pwd }
         })
         let t1= performance.now();
 

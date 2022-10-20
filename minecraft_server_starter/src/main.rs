@@ -29,10 +29,10 @@ async fn main() -> anyhow::Result<()>{
 
     let rocket = rocket::build()
     .manage(config)
+    .attach(auth_routes::stage())
     .attach(server_process::stage().await)
     .attach(minecraft_routes::stage())
     .attach(minecraft_routes::shutdown_hook())
-    .attach(auth_routes::stage())
     .attach(cors.to_cors().unwrap())
     .manage(cors.to_cors().unwrap())
     .mount("/", rocket_cors::catch_all_options_routes());
